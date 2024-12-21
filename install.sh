@@ -9,10 +9,10 @@ readonly SEALED="/usr/local/bin/sealed"
 readonly SUDOERS="/etc/sudoers.d/$GROUP_NAME"
 
 ##########
-# apt update
-# apt install python3 -y
-# apt install python3-tk -y
-# apt install at -y
+apt update
+apt install python3 -y
+apt install python3-tk -y
+apt install at -y
 
 #make executable files:
 chmod +x main.py

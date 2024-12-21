@@ -200,8 +200,8 @@ class SealedStructure:
 def schedule_system_block(duration_command):
 
     ### DO A TIMESHIFT BACKUP
-    #os.system('timeshift --create --comments "Backup before running Sealed" --tags D')
-    #os.system("timeshift --check")
+    os.system('timeshift --create --comments "Backup before running Sealed" --tags D')
+    os.system("timeshift --check")
     os.system('clear')
     ####
     print_log('Timeshift backup done')
