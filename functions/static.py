@@ -1,129 +1,270 @@
 import os
-import json
+import sys
 from tkinter import messagebox
 import subprocess
+from datetime import datetime, timedelta
 
-def checkFileStructure():
-    # Path to the Sealed directory
-    sealed_dir = '/usr/local/bin/sealed_support'
+class SealedStructure:
+    '''
+    This class takes care of creating the folder structure and also necessary files for the application.
+    It also takes care of uninstallation.
+    '''
+    def __init__(self):
+        
+        # Function to check if 'at' is installed
+        def check_at_installed():
+            """Check if 'at' command is installed and prompt the user to install it if missing."""
+            try:
+                subprocess.run(["at", "-V"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except FileNotFoundError:
+                messagebox.showerror("Error", "'at' command is not installed. Please install it using your package manager.")
+                return False
+            return True
 
-    # Check if Sealed folder exists; create it if not
-    if not os.path.exists(sealed_dir):
-        os.makedirs(sealed_dir)
-        print(f"Created folder: {sealed_dir}")
-    else:
-        print(f"Folder already exists: {sealed_dir}")
+        check_at_installed()
+        
+        self.support_directory = '/usr/local/bin/sealed_support'
+        self.sealed = '/usr/local/bin/sealed' #executable
+        self.websites_list = os.path.join(self.support_directory, 'websites.txt')
+        self.files_folders_list = os.path.join(self.support_directory, 'files_folders.txt')
+        self.strict_file = os.path.join(self.support_directory, 'strict.txt')
 
-    # Path to stats.json
-    stats_file = os.path.join(sealed_dir, 'stats.json')
+    def check_files_structure(self):
+        '''
+        A method that build or check the necessary directories and files for the app to work.
+        '''
+        def exist_or_create(file_path,file):
+            '''
+            Check if a file or a folder exist, if not then create it.
 
-    # Check if stats.json exists; create it if not
-    if not os.path.exists(stats_file):
-        with open(stats_file, 'w') as f:
-            json.dump({}, f)  # Create an empty JSON object
-        print(f"Created file: {stats_file}")
-    else:
-        print(f"File already exists: {stats_file}")
+            Parameters:
+            - file_path
+            - file: True if the path is a file, false if it's a folder.
+            '''
 
-    # Path to websites.txt
-    websites_file = os.path.join(sealed_dir, 'websites.txt')
+            if not os.path.exists(file_path):
+                if not file:
+                    os.makedirs(file_path)
+                else:
+                    with open(file_path, 'w') as f:
+                        f.write("")  # Create an empty text file
+                print(f"Created {'folder' if not file else 'file'}: {file_path}")
+            else:
+                print(f"{'Folder' if not file else 'File'} already exists: {file_path}")
 
-    # Check if websites.txt exists; create it if not
-    if not os.path.exists(websites_file):
-        with open(websites_file, 'w') as f:
-            f.write("")  # Create an empty text file
-        print(f"Created file: {websites_file}")
-    else:
-        print(f"File already exists: {websites_file}")
+            return None
+        
+        exist_or_create(self.support_directory, False)
+        exist_or_create(self.websites_list, True)
+        exist_or_create(self.files_folders_list, True)
+        exist_or_create(self.strict_file, True)
+    
+        return self
+    
+    # ---------------------------------------------------------------------------- #
+    #                            STRICT MODE MANAGEMENT                            #
+    # ---------------------------------------------------------------------------- #
 
-# Function to check if 'at' is installed
-def check_at_installed():
-    """Check if 'at' command is installed and prompt the user to install it if missing."""
-    try:
-        subprocess.run(["at", "-V"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except FileNotFoundError:
-        messagebox.showerror("Error", "'at' command is not installed. Please install it using your package manager.")
-        return False
-    return True
+    # Get how much time before the strict mode ends
+    def get_strict_mode_end(self, raw = False):
+        """Check if strict mode is enabled
+        
+        Paramters:
+        - raw: set to true to get the output in "%H:%M %Y-%m-%d" format.
 
+        Returns:
+        - String with datetime of when strict mode will end.
+        - False if strict mode is not active/ended.
+        """
+        try:
+            with open(self.strict_file, 'r') as file:
+                content = file.read().strip()
+                
+                if content:
+                    end_str = content
+                    if raw:
+                        return end_str
+                else:
+                    return False  # Return False if the file is empty
+
+            end_time = datetime.strptime(end_str, "%H:%M %Y-%m-%d")
+            now = datetime.now()
+            delta = end_time - now
+
+            if delta.total_seconds() > 0:
+                total_seconds = int(delta.total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                seconds = total_seconds % 60
+                
+                if hours > 0:
+                    return f"Strict mode will end in {hours} hours and {minutes} minutes"#, and {seconds} seconds."
+                else:
+                    return f"Strict mode will end in {minutes} minutes and {seconds} seconds."
+            else:
+                with open(self.strict_file, 'w') as file:
+                    pass  # Do nothing, just opening the file in 'w' mode clears its content
+                return False
+
+        except FileNotFoundError:
+            print("File not found.")
+
+        
+
+    def set_strict_end(self,duration_command):
+        with open(self.strict_file, 'w') as f:
+            # calculate and append the end time
+            now = datetime.now()
+            if "hours" in duration_command:
+                duration = int(duration_command.split()[0])
+                end_time = now + timedelta(hours=duration)
+            elif "minutes" in duration_command:
+                duration = int(duration_command.split()[0])
+                end_time = now + timedelta(minutes=duration)
+            else:
+                end_time = now
+
+            formatted_time = end_time.strftime("%H:%M %Y-%m-%d")
+            f.write(f"{formatted_time}")
+        
+        return None
+
+    # ---------------------------------------------------------------------------- #
+    #                          CHECK FILE PATH INTEGREITY                          #
+    # ---------------------------------------------------------------------------- #
+    
+    def check_valid_folder(self,path):
+        
+        if os.path.exists(path) and os.path.isdir(path):
+            return True
+        else:
+            return False
+
+    def validate_and_process_folders(self):
+        """
+        Validates folders listed in a .txt file, processes valid folders, and removes invalid entries.
+        """
+
+        invalid_folders = []
+        valid_folders = []
+
+        # Read the file and classify folders
+        with open(self.files_folders_list, 'r') as file:
+            folder_paths = [line.strip() for line in file]
+
+        for folder in folder_paths:
+            if self.check_valid_folder(folder):
+                valid_folders.append(folder)
+            else:
+                invalid_folders.append(folder)
+        
+        # Sort alphabetically
+        valid_folders.sort()
+
+        # Remove invalid entries from the file
+        with open(self.files_folders_list, 'w') as file:
+            for folder in valid_folders:
+                file.write(f"{folder}\n")
+
+        # Show warning if there are invalid entries
+        if invalid_folders:
+            messagebox.showwarning(
+                "Deleted Entries",
+                f"Deleted the following invalid entries:\n{', '.join(invalid_folders)}"
+            )
+        
+        return self
+
+
+
+    def uninstall(self, app):
+        if messagebox.askyesno("Confirm Uninstall", "Are you sure you want to uninstall?"):
+            # Delete group
+            subprocess.run(["sudo", "groupdel", 'sealed'], check=True)
+            # Delete sealed file
+            subprocess.run(["sudo", "rm", self.sealed], check=True)
+            # Delete sealed support directory
+            subprocess.run(["sudo", "rm", "-rf", self.support_directory], check=True)
+            # Delete sudoers file
+            sudoers = '/etc/sudoers.d/sealed'
+            subprocess.run(["sudo", "rm",sudoers,], check=True)
+            
+            # Close app
+            app.destroy()
+        
+        messagebox.showinfo('Successful uninstall.',
+                            'Sealed has been successfully uninstalled.\nYou may want to reboot to changes to take effect.',)
+        sys.exit()
+        return None
+    
 def schedule_system_block(duration_command):
+
     ### DO A TIMESHIFT BACKUP
-    os.system('timeshift --create --comments "Backup before running Sealed" --tags D')
-    os.system("timeshift --check")
+    #os.system('timeshift --create --comments "Backup before running Sealed" --tags D')
+    #os.system("timeshift --check")
     os.system('clear')
     ####
-    print('Tiumeshift backup done')
+    print_log('Timeshift backup done')
     # Remove user to admin
     os.system("sudo gpasswd -d edoardo sudo")
-    print('Removed used from admin group.')
+    print_log('Removed user from admin group.')
     # Add user to group
     os.system("sudo usermod -aG sealed edoardo")
-    print('Added user to sealed group.')
+    print_log('Added user to sealed group.')
     # Fixes
     os.system("sudo usermod -aG bluetooth edoardo")
     os.system("sudo usermod -aG netdev edoardo")
-    print('Added user to netdev and bluetooth group (fixes).')
+    print_log('Added user to netdev and bluetooth group (fixes).')
     
     # Schedule remove user from group
     os.system(f"echo 'sudo gpasswd -d edoardo sealed' | at now + {duration_command}")
-    print('Scheduled remove user from sealed group.')
+    print_log('Scheduled remove user from sealed group.')
     
     # Fixes
     os.system(f"echo 'sudo gpasswd -d edoardo bluetooth' | at now + {duration_command}")
     os.system(f"echo 'sudo gpasswd -d edoardo netdev' | at now + {duration_command}")
-    print('Scheduled remove user from netedev and bluetooth group.')
+    print_log('Scheduled remove user from netedev and bluetooth group.')
     
     # Shcedule add back privileges
     os.system(f"echo 'sudo usermod -aG sudo edoardo' | at now + {duration_command}")
-    print('Scheduled to give back permissions to user.')
+    print_log('Scheduled to give back permissions to user.')
 
-    ############# FUTURE FEATURE: BLOCK FILES ACCESS
-    def block_file(path):
-        os.system(f'sudo chown root:root {path}')
-        os.system(f'sudo chmod 600 {path}')
+    # ############# FUTURE FEATURE: BLOCK FILES ACCESS
+    # def block_file(path):
+    #     os.system(f'sudo chown root:root {path}')
+    #     os.system(f'sudo chmod 600 {path}')
 
         
-    def block_folder(path):
-        folder_name = os.path.basename(path)
-        backup_dir = "/usr/local/bin/sealed_support/permissions_backup"
-        backup_file = f"{backup_dir}/{folder_name}.bak"
+    # def block_folder(path):
+    #     folder_name = os.path.basename(path)
+    #     backup_dir = "/usr/local/bin/sealed_support/permissions_backup"
+    #     backup_file = f"{backup_dir}/{folder_name}.bak"
 
-        # Step 1: Ensure backup directory exists and save permissions
-        os.system(f"sudo mkdir -p '{backup_dir}'")
-        # Need to use this command because getfacl -R '{path}' will save the path without "/" in front of it
-        # and thus the restore command will not find the path.
-        os.system(f"getfacl -R '{path}' | sed 's|^# file: |# file: /|' > '{backup_file}'")
+    #     # Step 1: Ensure backup directory exists and save permissions
+    #     os.system(f"sudo mkdir -p '{backup_dir}'")
+    #     # Need to use this command because getfacl -R '{path}' will save the path without "/" in front of it
+    #     # and thus the restore command will not find the path.
+    #     os.system(f"getfacl -R '{path}' | sed 's|^# file: |# file: /|' > '{backup_file}'")
 
-        # Step 2: Restrict access to root
-        os.system(f"sudo chown -R root:root '{path}'")
-        os.system(f"sudo chmod -R 700 '{path}'")
+    #     # Step 2: Restrict access to root
+    #     os.system(f"sudo chown -R root:root '{path}'")
+    #     os.system(f"sudo chmod -R 700 '{path}'")
 
-        # Step 3: Schedule restore with 'at' command
-        restore_command = (
-            f"sudo setfacl --restore='{backup_file}' && "
-            f"sudo rm -f '{backup_file}'"
-        )
-        os.system(f'echo "{restore_command}" | at now + {duration_command}')
+    #     # Step 3: Schedule restore with 'at' command
+    #     restore_command = (
+    #         f"sudo setfacl --restore='{backup_file}' && "
+    #         f"sudo rm -f '{backup_file}'"
+    #     )
+    #     os.system(f'echo "{restore_command}" | at now + {duration_command}')
 
-        print(f"Folder '{path}' is now restricted. Permissions will be restored in {duration_command}.")
-
-
-    block_folder("/home/edoardo/Nextcloud/delayed-admin 2.0")
-    block_folder("/home/edoardo/Applications/delayed-admin")
-    block_folder("/home/edoardo/VirtualBox VMs")
-    
-
-def uninstall():
-    # Delete group
-    subprocess.run(["sudo", "groupdel", 'sealed'], check=True)
-    # Delete sealed file
-    app_path = '/usr/local/bin/sealed'
-    subprocess.run(["sudo", "rm", app_path], check=True)
-    # Delete sealed support directory
-    fodler_path = '/usr/local/bin/sealed_support'
-    subprocess.run(["sudo", "rm", "-rf", fodler_path], check=True)
-    # Delete sudoers file
-    sudoers = '/etc/sudoers.d/sealed'
-    subprocess.run(["sudo", "rm",sudoers,], check=True)
+    #     print_log(f"Folder '{path}' is now restricted. Permissions will be restored in {duration_command}.")
 
 
+    # block_folder("/home/edoardo/Nextcloud/delayed-admin 2.0")
+    # block_folder("/home/edoardo/Applications/delayed-admin")
+    # block_folder("/home/edoardo/VirtualBox VMs")
+
+
+def print_log(string):
+    print(f"✅ {string}")
+    return None
