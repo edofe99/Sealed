@@ -158,8 +158,8 @@ class SealedStructure:
             else:
                 invalid_folders.append(folder)
         
-        # Sort alphabetically
-        valid_folders.sort()
+        # Sort alphabetically and remove duplicates
+        valid_folders = sorted(set(valid_folders))
 
         # Remove invalid entries from the file
         with open(self.files_folders_list, 'w') as file:

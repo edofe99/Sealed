@@ -100,13 +100,14 @@ class WebsiteBlocker:
     def start_file_folder_block(self):
 
         self.sealed.validate_and_process_folders()
+        end_time = self.sealed.get_strict_mode_end(raw=True)
 
         with open(self.sealed.files_folders_list, 'r') as file:
             for line in file:
                 line = line.strip()
                 self.block_folder(line)
-        
-        print_log(f'Permissions will be restored at {self.sealed.get_strict_mode_end(raw=True)}.')
+            
+        print_log(f'Permissions will be restored at {end_time}.')
 
 
     def endWebsiteBlock(self):
@@ -236,12 +237,13 @@ class WebsiteBlocker:
             Open the file, order it alphabetically and display content.
             '''
             listbox.delete(0, tk.END)
+            self.sealed.validate_and_process_folders()
             try:
                 with open(file_path, 'r') as file:
                     lines = file.readlines()
                 
-                # Sort lines alphabetically
-                sorted_lines = sorted(line.strip() for line in lines)
+                # Remove duplicates, strip whitespace, and sort alphabetically
+                sorted_lines = sorted(set(line.strip() for line in lines))
                 
                 # Save the sorted lines back to the file
                 with open(file_path, 'w') as file:

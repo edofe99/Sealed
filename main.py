@@ -8,7 +8,7 @@ from functions.website_blocker import WebsiteBlocker
 # Initialize the Tkinter application
 app = tk.Tk()
 app.title("Website Blocker")
-app.geometry("400x350")
+app.geometry("400x400")
 app.resizable(False, False)
 
 # Ensure the required folder and files exist
@@ -61,15 +61,15 @@ def toggle_website_block():
 
                     # Register end of strict mode
                     sealed.set_strict_end(duration_command)
-
-                    # Strict mode routine
-                    schedule_system_block(duration_command)
-                    # Block websites
-                    blocker.startWebsiteBlock()
                     # Block files/folders if check
                     if enable_block_files.get():
                         blocker.start_file_folder_block()
                         block_files_checkbox.config(state='disabled')
+                    
+                    # Strict mode routine
+                    schedule_system_block(duration_command)
+                    # Block websites
+                    blocker.startWebsiteBlock()
                     
 
                     button.config(text="Stop Blocking Websites", style="Danger.TButton")
@@ -113,6 +113,7 @@ def toggle_website_block():
                     now = datetime.now()
                     end_time = now + timedelta(minutes=value) if unit == 'minutes' else now + timedelta(hours=value)
                     end_string = end_time.strftime('%A %d %B %Y %H:%M')
+                    
                     if end_time.date() == now.date():
                         end_string = f"today at {end_time.strftime('%H:%M')}"
                     # if end date is tomorrow
