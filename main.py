@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import tkinter as tk
 from tkinter import ttk, messagebox
 from functions.static import SealedStructure, schedule_system_block
@@ -95,7 +96,9 @@ def toggle_website_block():
             duration_window.title("Set Strict Mode Duration")
             duration_window.geometry("300x150")
 
-            tk.Label(duration_window, text="Enter duration:").pack(pady=5)
+            # Create a label and store its reference in a variable
+            duration_label = tk.Label(duration_window, text="Enter duration:")
+            duration_label.pack(pady=5)
 
             duration_entry = tk.Entry(duration_window)
             duration_entry.pack(pady=5)
@@ -104,17 +107,34 @@ def toggle_website_block():
             def validate_duration(var, indx, mode):
                 try:
                     value = int(duration_entry_var.get())
+
+                    # Printing end time of the block
+                    unit = str(duration_units.get())
+                    now = datetime.now()
+                    end_time = now + timedelta(minutes=value) if unit == 'minutes' else now + timedelta(minutes=value)
+                    end_string = end_time.strftime('%A %d %B %Y %H:%M')
+                    if end_time.date() == now.date():
+                        end_string = f"today at {end_time.strftime('%H:%M')}"
+                    # if end date is tomorrow
+                    elif end_time.date() == (now + timedelta(days=1)).date():
+                        end_string = f"tomorrow at {end_time.strftime('%H:%M')}"
+                    
+                    # Check if the input value is valid
                     if value > 0:
                         submit_button.config(state="normal")  # Enable the button
+                        duration_label.config(text=f"Seal with end {end_string}")
                     else:
                         submit_button.config(state="disabled")  # Disable the button
+                        duration_label.config(text="Enter duration")
                 except ValueError:
                     submit_button.config(state="disabled")  # Disable if input is invalid
+
 
             # Attach the validation function to the Entry widget
             duration_entry_var = tk.StringVar()
             duration_entry_var.trace_add("write", validate_duration)  # Trigger on every write
             duration_entry.config(textvariable=duration_entry_var)
+
             
 
             duration_units = ttk.Combobox(duration_window, values=["minutes", "hours"])
