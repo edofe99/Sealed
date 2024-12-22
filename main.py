@@ -111,7 +111,7 @@ def toggle_website_block():
                     # Printing end time of the block
                     unit = str(duration_units.get())
                     now = datetime.now()
-                    end_time = now + timedelta(minutes=value) if unit == 'minutes' else now + timedelta(minutes=value)
+                    end_time = now + timedelta(minutes=value) if unit == 'minutes' else now + timedelta(hours=value)
                     end_string = end_time.strftime('%A %d %B %Y %H:%M')
                     if end_time.date() == now.date():
                         end_string = f"today at {end_time.strftime('%H:%M')}"
