@@ -225,6 +225,9 @@ manage_blocked_files.pack(pady=10)
 enable_block_files = tk.BooleanVar(value=True)  # Initial value for checkbox
 block_files_checkbox = ttk.Checkbutton(app,text="Block files/folders",variable=enable_block_files)
 block_files_checkbox.pack(pady=(5,1))
+if blocker.check_files_block():
+    block_files_checkbox.config(state="disabled")
+
 
 # --------------------------- Strict mode checkbox --------------------------- #
 
@@ -234,7 +237,8 @@ strict_checkbox = ttk.Checkbutton(app, text="Strict Mode", variable=enable_stric
 strict_checkbox.pack(pady=(1,10))
 if blocker.getWebsiteBlockStatus():
     strict_checkbox.config(state="disabled")
-
+    if sealed.get_strict_mode_end():
+        enable_strict_mode.set(True)
 
 # Update the time label
 update_remaining_time()

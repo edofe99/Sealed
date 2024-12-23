@@ -24,7 +24,8 @@ chmod +x ./support/exec.sh
 sudo groupadd "$GROUP_NAME"
 
 # Main App
-mkdir "$APP_PATH"
+mkdir -p "$APP_PATH"
+mkdir -p "$APP_PATH/permissions_backup"
 cp main.py "$APP_PATH"
 cp -r functions "$APP_PATH"
 cp ./support/exec.sh "$SEALED"

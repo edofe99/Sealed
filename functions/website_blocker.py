@@ -12,6 +12,7 @@ class WebsiteBlocker:
 
         self.support_directory = sealed.support_directory
         self.websitesList = sealed.websites_list
+        self.backup_dir = "/usr/local/bin/sealed_support/permissions_backup"
         
         self.hosts = '/etc/hosts'
         self.hostsHeader = "###### SEALED (do not touch) ######"
@@ -67,18 +68,32 @@ class WebsiteBlocker:
         #     os.system(f'sudo chown root:root {path}')
         #     os.system(f'sudo chmod 600 {path}')
 
+    def check_files_block(self):
+        '''
+        A function that checks if, when a block with strict mode is active,
+        the file block is active or not. This is essential because: say that you start
+        a strict mode block, you then close the app, you then open it again before the block ends,
+        how does the app knows if files where already blocked or not?
+        We simply check if .bak files exist on the backup directory.
+        '''
         
+        for file_name in os.listdir(self.backup_dir):
+            if file_name.endswith('.bak'):
+                return True
+
+        return False
+
+
     def block_folder(self,path):
         ''' 
         A function that block access to a folder.
         '''
 
         folder_name = os.path.basename(path)
-        backup_dir = "/usr/local/bin/sealed_support/permissions_backup"
-        backup_file = f"{backup_dir}/{folder_name}.bak"
+        backup_file = f"{self.backup_dir}/{folder_name}.bak"
 
         # Step 1: Ensure backup directory exists and save permissions
-        os.system(f"sudo mkdir -p '{backup_dir}'")
+        os.system(f"sudo mkdir -p '{self.backup_dir}'")
         # Need to use this command because getfacl -R '{path}' will save the path without "/" in front of it
         # and thus the restore command will not find the path.
         os.system(f"getfacl -R '{path}' | sed 's|^# file: |# file: /|' > '{backup_file}'")
