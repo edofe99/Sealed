@@ -7,7 +7,7 @@ CMD=${@:-/bin/bash}
 
 if [[ "$CMD" == "block" ]]; then
     CMD="sudo python3 /usr/local/bin/sealed_support/main.py"
-elif [[ "$CMD" == "input-remapper-gtk" ]]; then
+elif [[ "$CMD" == "input-remapper" ]]; then
     CMD="sudo input-remapper-gtk"
 else
     echo 'Not valid command'
