@@ -23,6 +23,7 @@ chmod +x ./support/Sealed.desktop
 
 # Permissions and blocks
 sudo groupadd "$GROUP_NAME"
+sudo usermod -aG sealed edoardo
 
 # Main App
 mkdir -p "$APP_PATH"

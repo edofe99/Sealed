@@ -1,1 +1,1 @@
-
+%sealed ALL=(ALL) NOPASSWD: /usr/bin/python3 /usr/local/bin/sealed_support/main.py

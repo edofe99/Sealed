@@ -189,7 +189,7 @@ class SealedStructure:
         - message (str): The message to self.log.
         """
         # Get the current date and time
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Create the self.log entry
         self.log_entry = f"[{current_time}] {message}\n"
@@ -200,6 +200,8 @@ class SealedStructure:
 
     def uninstall(self, app):
         if messagebox.askyesno("Confirm Uninstall", "Are you sure you want to uninstall?"):
+            # Remove user from group
+            os.system('sudo gpasswd -d edoardo sealed')
             # Delete group
             subprocess.run(["sudo", "groupdel", 'sealed'], check=True)
             # # Delete sealed file
@@ -232,17 +234,19 @@ class SealedStructure:
         # Remove user to admin
         os.system("sudo gpasswd -d edoardo sudo")
         self.log('Removed user from admin group.')
+
         # Add user to group
-        os.system("sudo usermod -aG sealed edoardo")
-        self.log('Added user to sealed group.')
+        #os.system("sudo usermod -aG sealed edoardo")
+        #self.log('Added user to sealed group.')
+
         # Fixes
         os.system("sudo usermod -aG bluetooth edoardo")
         os.system("sudo usermod -aG netdev edoardo")
         self.log('Added user to netdev and bluetooth group (fixes).')
         
         # Schedule remove user from group
-        os.system(f"echo 'sudo gpasswd -d edoardo sealed' | at now + {duration_command}")
-        self.log(f'Scheduled: remove user from sealed group at {duration_command}')
+        #os.system(f"echo 'sudo gpasswd -d edoardo sealed' | at now + {duration_command}")
+        #self.log(f'Scheduled: remove user from sealed group at {duration_command}')
         
         # Fixes
         os.system(f"echo 'sudo gpasswd -d edoardo bluetooth' | at now + {duration_command}")

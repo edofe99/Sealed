@@ -36,7 +36,7 @@ class WebsiteBlocker:
         try:
             # Backup the hosts file
             shutil.copy(self.hosts, f"{self.hosts}.bak")
-            self.log("Backup created: /etc/hosts.bak")
+            self.sealed.log("Backup created: /etc/hosts.bak")
             
             with open(self.hosts, 'a') as f:
                 # Add the marker line
@@ -49,14 +49,14 @@ class WebsiteBlocker:
                         if website:
                             f.write(f"127.0.0.1 www.{website}\n")
                             f.write(f"127.0.0.1 {website}\n")
-            self.log("Websites added to hosts file.")
+            self.sealed.log("Websites added to hosts file.")
 
         except FileNotFoundError as e:
-            self.log(f"File not found: {e}")
+            self.sealed.log(f"File not found: {e}")
         except PermissionError:
-            self.log("Permission denied. Run as root.")
+            self.sealed.log("Permission denied. Run as root.")
         except Exception as e:
-            self.log(f"Error modifying hosts file: {e}")
+            self.sealed.log(f"Error modifying hosts file: {e}")
             
             return True
         
