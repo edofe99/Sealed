@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import tkinter as tk
 from tkinter import ttk, messagebox
-from functions.static import SealedStructure, schedule_system_block
+from functions.static import SealedStructure
 from functions.website_blocker import WebsiteBlocker
 
 
@@ -67,7 +67,7 @@ def toggle_website_block():
                         block_files_checkbox.config(state='disabled')
                     
                     # Strict mode routine
-                    schedule_system_block(duration_command)
+                    sealed.schedule_system_block(duration_command)
                     # Block websites
                     blocker.startWebsiteBlock()
                     

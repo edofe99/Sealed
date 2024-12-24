@@ -19,17 +19,21 @@ chmod +x main.py
 chmod +x ./functions/static.py
 chmod +x ./functions/website_blocker.py
 chmod +x ./support/exec.sh
+chmod +x ./support/Sealed.desktop
 
 # Permissions and blocks
 sudo groupadd "$GROUP_NAME"
 
 # Main App
 mkdir -p "$APP_PATH"
-mkdir -p "$APP_PATH/permissions_backup"
 cp main.py "$APP_PATH"
 cp -r functions "$APP_PATH"
-cp ./support/exec.sh "$SEALED"
+cp -r ./support/Sealed.desktop /usr/share/applications/Sealed.desktop
 
-bash -c "EDITOR='tee' visudo -f $SUDOERS" <<EOF
-%$GROUP_NAME ALL = $SEALED
-EOF
+cp ./support/sealed /etc/sudoers.d/sealed
+
+#cp ./support/exec.sh "$SEALED"
+
+# bash -c "EDITOR='tee' visudo -f $SUDOERS" <<EOF
+# %$GROUP_NAME ALL = $SEALED
+# EOF

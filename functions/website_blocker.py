@@ -2,7 +2,7 @@ import os
 import shutil
 import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
-from functions.static import print_log
+
 
 
 class WebsiteBlocker:
@@ -12,7 +12,7 @@ class WebsiteBlocker:
 
         self.support_directory = sealed.support_directory
         self.websitesList = sealed.websites_list
-        self.backup_dir = "/usr/local/bin/sealed_support/permissions_backup"
+        self.backup_dir = self.sealed.permission_backup_dir
         
         self.hosts = '/etc/hosts'
         self.hostsHeader = "###### SEALED (do not touch) ######"
@@ -25,10 +25,10 @@ class WebsiteBlocker:
                     if self.hostsHeader in line:
                         return True
         except PermissionError:
-            print("Permission denied. Run as root.")
+            self.sealed.log("Permission denied. Run as root.")
             return False
         except Exception as e:
-            print(f"Error reading hosts file: {e}")
+            self.sealed.log(f"Error reading hosts file: {e}")
         return False
 
     def startWebsiteBlock(self):
@@ -36,7 +36,7 @@ class WebsiteBlocker:
         try:
             # Backup the hosts file
             shutil.copy(self.hosts, f"{self.hosts}.bak")
-            print("Backup created: /etc/hosts.bak")
+            self.log("Backup created: /etc/hosts.bak")
             
             with open(self.hosts, 'a') as f:
                 # Add the marker line
@@ -49,14 +49,14 @@ class WebsiteBlocker:
                         if website:
                             f.write(f"127.0.0.1 www.{website}\n")
                             f.write(f"127.0.0.1 {website}\n")
-            print("Websites added to hosts file.")
+            self.log("Websites added to hosts file.")
 
         except FileNotFoundError as e:
-            print(f"File not found: {e}")
+            self.log(f"File not found: {e}")
         except PermissionError:
-            print("Permission denied. Run as root.")
+            self.log("Permission denied. Run as root.")
         except Exception as e:
-            print(f"Error modifying hosts file: {e}")
+            self.log(f"Error modifying hosts file: {e}")
             
             return True
         
@@ -109,7 +109,7 @@ class WebsiteBlocker:
         )
         os.system(f'echo "{restore_command}" | at {self.sealed.get_strict_mode_end(raw=True)}')
 
-        print_log(f"Folder '{path}' is now restricted.")
+        self.sealed.log(f"Folder '{path}' is now restricted.")
 
 
     def start_file_folder_block(self):
@@ -122,20 +122,20 @@ class WebsiteBlocker:
                 line = line.strip()
                 self.block_folder(line)
             
-        print_log(f'Permissions will be restored at {end_time}.')
+        self.sealed.log(f'Permissions will be restored at {end_time}.')
 
 
     def endWebsiteBlock(self):
         """Restore the hosts file from the backup."""
         try:
             shutil.move(f"{self.hosts}.bak", self.hosts)
-            print("Hosts file restored from backup.")
+            self.sealed.log("Hosts file restored from backup.")
         except FileNotFoundError:
-            print("Backup file not found. Unable to restore.")
+            self.sealed.log("Backup file not found. Unable to restore.")
         except PermissionError:
-            print("Permission denied. Run as root.")
+            self.sealed.log("Permission denied. Run as root.")
         except Exception as e:
-            print(f"Error restoring hosts file: {e}")
+            self.sealed.log(f"Error restoring hosts file: {e}")
 
 
     def reload_website_block(self):
@@ -162,14 +162,14 @@ class WebsiteBlocker:
                             f.write(f"127.0.0.1 www.{website}\n")
                             f.write(f"127.0.0.1 {website}\n")
             
-            print("Websites reloaded in hosts file.")
+            self.sealed.log("Websites reloaded in hosts file.")
 
         except FileNotFoundError as e:
-            print(f"File not found: {e}")
+            self.sealed.log(f"File not found: {e}")
         except PermissionError:
-            print("Permission denied. Run as root.")
+            self.sealed.log("Permission denied. Run as root.")
         except Exception as e:
-            print(f"Error reloading hosts file: {e}")
+            self.sealed.log(f"Error reloading hosts file: {e}")
 
     # def manageWebsites(self):
         

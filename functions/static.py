@@ -24,10 +24,13 @@ class SealedStructure:
         check_at_installed()
         
         self.support_directory = '/usr/local/bin/sealed_support'
-        self.sealed = '/usr/local/bin/sealed' #executable
+        self.permission_backup_dir = os.path.join(self.support_directory,'permissions_backup')
+        # self.sealed = '/usr/local/bin/sealed' #executable
+        self.log_file = os.path.join(self.support_directory,'log.txt')
         self.websites_list = os.path.join(self.support_directory, 'websites.txt')
         self.files_folders_list = os.path.join(self.support_directory, 'files_folders.txt')
         self.strict_file = os.path.join(self.support_directory, 'strict.txt')
+        
 
     def check_files_structure(self):
         '''
@@ -39,7 +42,7 @@ class SealedStructure:
 
             Parameters:
             - file_path
-            - file: True if the path is a file, false if it's a folder.
+            - file: True if the path is a file, False if it's a folder.
             '''
 
             if not os.path.exists(file_path):
@@ -55,6 +58,8 @@ class SealedStructure:
             return None
         
         exist_or_create(self.support_directory, False)
+        exist_or_create(self.permission_backup_dir,False)
+        exist_or_create(self.log_file, True)
         exist_or_create(self.websites_list, True)
         exist_or_create(self.files_folders_list, True)
         exist_or_create(self.strict_file, True)
@@ -176,14 +181,32 @@ class SealedStructure:
         
         return self
 
+    def log(self, message):
+        """
+        Appends a message to a self.log file, prefixed with the current date and time.
 
+        Parameters:
+        - message (str): The message to self.log.
+        """
+        # Get the current date and time
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Create the self.log entry
+        self.log_entry = f"[{current_time}] {message}\n"
+
+        # Append the self.log entry to the file
+        with open(self.log_file, "a") as file:
+            file.write(self.log_entry)
 
     def uninstall(self, app):
         if messagebox.askyesno("Confirm Uninstall", "Are you sure you want to uninstall?"):
             # Delete group
             subprocess.run(["sudo", "groupdel", 'sealed'], check=True)
-            # Delete sealed file
-            subprocess.run(["sudo", "rm", self.sealed], check=True)
+            # # Delete sealed file
+            # subprocess.run(["sudo", "rm", self.sealed], check=True)
+            # Delete the .desktop file
+            desktop_file_path = '/usr/share/applications/Sealed.desktop'
+            subprocess.run(["sudo", "rm", "-rf", desktop_file_path], check=True)
             # Delete sealed support directory
             subprocess.run(["sudo", "rm", "-rf", self.support_directory], check=True)
             # Delete sudoers file
@@ -198,74 +221,34 @@ class SealedStructure:
         sys.exit()
         return None
     
-def schedule_system_block(duration_command):
+    def schedule_system_block(self, duration_command):
 
-    ### DO A TIMESHIFT BACKUP
-    os.system('timeshift --create --comments "Backup before running Sealed" --tags D')
-    os.system("timeshift --check")
-    os.system('clear')
-    ####
-    print_log('Timeshift backup done')
-    # Remove user to admin
-    os.system("sudo gpasswd -d edoardo sudo")
-    print_log('Removed user from admin group.')
-    # Add user to group
-    os.system("sudo usermod -aG sealed edoardo")
-    print_log('Added user to sealed group.')
-    # Fixes
-    os.system("sudo usermod -aG bluetooth edoardo")
-    os.system("sudo usermod -aG netdev edoardo")
-    print_log('Added user to netdev and bluetooth group (fixes).')
-    
-    # Schedule remove user from group
-    os.system(f"echo 'sudo gpasswd -d edoardo sealed' | at now + {duration_command}")
-    print_log('Scheduled remove user from sealed group.')
-    
-    # Fixes
-    os.system(f"echo 'sudo gpasswd -d edoardo bluetooth' | at now + {duration_command}")
-    os.system(f"echo 'sudo gpasswd -d edoardo netdev' | at now + {duration_command}")
-    print_log('Scheduled remove user from netedev and bluetooth group.')
-    
-    # Shcedule add back privileges
-    os.system(f"echo 'sudo usermod -aG sudo edoardo' | at now + {duration_command}")
-    print_log('Scheduled to give back permissions to user.')
-
-    # ############# FUTURE FEATURE: BLOCK FILES ACCESS
-    # def block_file(path):
-    #     os.system(f'sudo chown root:root {path}')
-    #     os.system(f'sudo chmod 600 {path}')
-
+        # ### DO A TIMESHIFT BACKUP
+        # os.system('timeshift --create --comments "Backup before running Sealed" --tags D')
+        # os.system("timeshift --check")
+        # os.system('clear')
+        ####
+        # self.log('Timeshift backup done')
+        # Remove user to admin
+        os.system("sudo gpasswd -d edoardo sudo")
+        self.log('Removed user from admin group.')
+        # Add user to group
+        os.system("sudo usermod -aG sealed edoardo")
+        self.log('Added user to sealed group.')
+        # Fixes
+        os.system("sudo usermod -aG bluetooth edoardo")
+        os.system("sudo usermod -aG netdev edoardo")
+        self.log('Added user to netdev and bluetooth group (fixes).')
         
-    # def block_folder(path):
-    #     folder_name = os.path.basename(path)
-    #     backup_dir = "/usr/local/bin/sealed_support/permissions_backup"
-    #     backup_file = f"{backup_dir}/{folder_name}.bak"
-
-    #     # Step 1: Ensure backup directory exists and save permissions
-    #     os.system(f"sudo mkdir -p '{backup_dir}'")
-    #     # Need to use this command because getfacl -R '{path}' will save the path without "/" in front of it
-    #     # and thus the restore command will not find the path.
-    #     os.system(f"getfacl -R '{path}' | sed 's|^# file: |# file: /|' > '{backup_file}'")
-
-    #     # Step 2: Restrict access to root
-    #     os.system(f"sudo chown -R root:root '{path}'")
-    #     os.system(f"sudo chmod -R 700 '{path}'")
-
-    #     # Step 3: Schedule restore with 'at' command
-    #     restore_command = (
-    #         f"sudo setfacl --restore='{backup_file}' && "
-    #         f"sudo rm -f '{backup_file}'"
-    #     )
-    #     os.system(f'echo "{restore_command}" | at now + {duration_command}')
-
-    #     print_log(f"Folder '{path}' is now restricted. Permissions will be restored in {duration_command}.")
-
-
-    # block_folder("/home/edoardo/Nextcloud/delayed-admin 2.0")
-    # block_folder("/home/edoardo/Applications/delayed-admin")
-    # block_folder("/home/edoardo/VirtualBox VMs")
-
-
-def print_log(string):
-    print(f"✅ {string}")
-    return None
+        # Schedule remove user from group
+        os.system(f"echo 'sudo gpasswd -d edoardo sealed' | at now + {duration_command}")
+        self.log(f'Scheduled: remove user from sealed group at {duration_command}')
+        
+        # Fixes
+        os.system(f"echo 'sudo gpasswd -d edoardo bluetooth' | at now + {duration_command}")
+        os.system(f"echo 'sudo gpasswd -d edoardo netdev' | at now + {duration_command}")
+        self.log(f'Scheduled remove user from netedev and bluetooth group at {duration_command}.')
+        
+        # Shcedule add back privileges
+        os.system(f"echo 'sudo usermod -aG sudo edoardo' | at now + {duration_command}")
+        self.log(f'Scheduled to give back permissions to user at {duration_command}.')
