@@ -7,7 +7,7 @@ from functions.website_blocker import WebsiteBlocker
 
 # Initialize the Tkinter application
 app = tk.Tk()
-app.title("Website Blocker")
+app.title("Sealed")
 app.geometry("400x400")
 app.resizable(False, False)
 
