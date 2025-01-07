@@ -84,7 +84,7 @@ class WebsiteBlocker:
         return False
 
 
-    def block_folder(self,path):
+    def block_file_folder(self,path):
         ''' 
         A function that block access to a folder.
         '''
@@ -120,7 +120,7 @@ class WebsiteBlocker:
         with open(self.sealed.files_folders_list, 'r') as file:
             for line in file:
                 line = line.strip()
-                self.block_folder(line)
+                self.block_file_folder(line)
             
         self.sealed.log(f'Permissions will be restored at {end_time}.')
 
@@ -278,13 +278,13 @@ class WebsiteBlocker:
                 # If we're adding a folder/file to block
                 if element == 'file/folder':
                     # check if the new file/folder to block is a valid file/folder
-                    if not self.sealed.check_valid_folder(entry):
-                        messagebox.showerror("Error", "Invalid duration.")
+                    if not self.sealed.check_valid_folder(entry) and not self.sealed.check_valid_file(entry):
+                        messagebox.showerror("Error", "The path does not point to a valid file/folder.")
                     else:
                         # if it's a valid file/folder let's check if strict mode is active
                         if self.sealed.get_strict_mode_end():
                             #if it's acive let's block the file/folder now
-                            self.block_folder(entry)
+                            self.block_file_folder(entry)
 
                 with open(file_path, 'a') as file:
                     file.write(f"{entry}\n")

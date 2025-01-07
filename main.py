@@ -109,7 +109,7 @@ def toggle_website_block():
                     value = int(duration_entry_var.get())
 
                     # Printing end time of the block
-                    unit = str(duration_units.get())
+                    unit = str(duration_unit_var.get())
                     now = datetime.now()
                     end_time = now + timedelta(minutes=value) if unit == 'minutes' else now + timedelta(hours=value)
                     end_string = end_time.strftime('%A %d %B %Y %H:%M')
@@ -136,10 +136,11 @@ def toggle_website_block():
             duration_entry_var.trace_add("write", validate_duration)  # Trigger on every write
             duration_entry.config(textvariable=duration_entry_var)
 
-            
-
-            duration_units = ttk.Combobox(duration_window, values=["minutes", "hours"])
-            duration_units.set("minutes")
+            duration_unit_var = tk.StringVar()
+            duration_unit_var.trace_add("write", validate_duration)  # Trace changes in the combobox's selection
+            duration_units = ttk.Combobox(duration_window, textvariable=duration_unit_var,
+                                          values=["minutes", "hours"])
+            duration_units.set("hours")
             duration_units.pack(pady=5)
 
             submit_button = ttk.Button(duration_window, text="Set", command=set_strict_mode)

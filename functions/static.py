@@ -146,37 +146,46 @@ class SealedStructure:
         else:
             return False
 
+    def check_valid_file(self,path):
+        if os.path.exists(path) and os.path.isfile(path):
+            return True
+        else:
+            return False
+
+
     def validate_and_process_folders(self):
         """
         Validates folders listed in a .txt file, processes valid folders, and removes invalid entries.
         """
 
-        invalid_folders = []
-        valid_folders = []
-
+        invalid_entries = []
+        valid_entries = []
+        
         # Read the file and classify folders
         with open(self.files_folders_list, 'r') as file:
             folder_paths = [line.strip() for line in file]
 
         for folder in folder_paths:
             if self.check_valid_folder(folder):
-                valid_folders.append(folder)
+                valid_entries.append(folder)
+            elif self.check_valid_file(folder):
+                valid_entries.append(folder)
             else:
-                invalid_folders.append(folder)
+                invalid_entries.append(folder)
         
         # Sort alphabetically and remove duplicates
-        valid_folders = sorted(set(valid_folders))
+        valid_entries = sorted(set(valid_entries))
 
         # Remove invalid entries from the file
         with open(self.files_folders_list, 'w') as file:
-            for folder in valid_folders:
-                file.write(f"{folder}\n")
+            for entry in valid_entries:
+                file.write(f"{entry}\n")
 
         # Show warning if there are invalid entries
-        if invalid_folders:
+        if invalid_entries:
             messagebox.showwarning(
                 "Deleted Entries",
-                f"Deleted the following invalid entries:\n{', '.join(invalid_folders)}"
+                f"Deleted the following invalid entries:\n{', '.join(invalid_entries)}"
             )
         
         return self
