@@ -130,6 +130,9 @@ def toggle_website_block():
                 except ValueError:
                     submit_button.config(state="disabled")  # Disable if input is invalid
 
+            submit_button = ttk.Button(duration_window, text="Set", command=set_strict_mode)
+            submit_button.config(state="disabled")
+            submit_button.pack(pady=10)
 
             # Attach the validation function to the Entry widget
             duration_entry_var = tk.StringVar()
@@ -142,10 +145,6 @@ def toggle_website_block():
                                           values=["minutes", "hours"])
             duration_units.set("hours")
             duration_units.pack(pady=5)
-
-            submit_button = ttk.Button(duration_window, text="Set", command=set_strict_mode)
-            submit_button.config(state="disabled")
-            submit_button.pack(pady=10)
             
 
         else:
