@@ -145,6 +145,9 @@ def toggle_website_block():
                                           values=["minutes", "hours"])
             duration_units.set("hours")
             duration_units.pack(pady=5)
+
+            # Add the button at the bottom
+            submit_button.pack(side="bottom", pady=10)
             
 
         else:
