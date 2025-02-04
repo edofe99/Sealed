@@ -1,4 +1,5 @@
 import os
+import grp
 import sys
 from tkinter import messagebox
 import subprocess
@@ -232,6 +233,27 @@ class SealedStructure:
         sys.exit()
         return None
     
+    @staticmethod
+    def get_sudo_group():
+        """
+        Returns 'sudo' if the system defines a sudo group,
+        'wheel' if the system defines a wheel group,
+        or None if neither group exists.
+        """
+        try:
+            grp.getgrnam('sudo')
+            return 'sudo'
+        except KeyError:
+            pass
+
+        try:
+            grp.getgrnam('wheel')
+            return 'wheel'
+        except KeyError:
+            pass
+        
+        return None
+    
     def schedule_system_block(self, duration_command):
 
         # ### DO A TIMESHIFT BACKUP
@@ -240,8 +262,15 @@ class SealedStructure:
         # os.system('clear')
         ####
         # self.log('Timeshift backup done')
+        
+        # Get the name of the sudo group
+        sudo_group = self.get_sudo_group()
+
+        if sudo_group == None:
+            raise RuntimeError("Could not find the administration group.")
+        
         # Remove user to admin
-        os.system("sudo gpasswd -d edoardo sudo")
+        os.system(f"sudo gpasswd -d edoardo {sudo_group}")
         self.log('Removed user from admin group.')
 
         # Add user to group
@@ -263,5 +292,5 @@ class SealedStructure:
         self.log(f'Scheduled remove user from netedev and bluetooth group at {duration_command}.')
         
         # Shcedule add back privileges
-        os.system(f"echo 'sudo usermod -aG sudo edoardo' | at now + {duration_command}")
+        os.system(f"echo 'sudo usermod -aG {sudo_group} edoardo' | at now + {duration_command}")
         self.log(f'Scheduled to give back permissions to user at {duration_command}.')

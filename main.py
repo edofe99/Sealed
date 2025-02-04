@@ -60,14 +60,21 @@ def toggle_website_block():
                         duration_command = f"{duration} minutes"
 
                     # Register end of strict mode
-                    sealed.set_strict_end(duration_command)
+                    sealed.set_strict_end(duration_command)                    
+                    
                     # Block files/folders if check
                     if enable_block_files.get():
                         blocker.start_file_folder_block()
                         block_files_checkbox.config(state='disabled')
                     
                     # Strict mode routine
-                    sealed.schedule_system_block(duration_command)
+                    try: 
+                        sealed.schedule_system_block(duration_command)
+                    except Exception as e:
+                        # e is the exception object
+                        # Do whatever you need with the error, e.g., display it in a message box:
+                        messagebox.showerror("Error", f"{str(e)}")
+
                     # Block websites
                     blocker.startWebsiteBlock()
                     
