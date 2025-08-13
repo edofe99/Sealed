@@ -269,6 +269,10 @@ class SealedStructure:
         if sudo_group == None:
             raise RuntimeError("Could not find the administration group.")
         
+        # Shcedule add back privileges
+        os.system(f"echo 'sudo usermod -aG {sudo_group} edoardo' | at now + {duration_command}")
+        self.log(f'Scheduled to give back permissions to user at {duration_command}.')
+
         # Remove user to admin
         os.system(f"sudo gpasswd -d edoardo {sudo_group}")
         self.log('Removed user from admin group.')
@@ -278,19 +282,17 @@ class SealedStructure:
         #self.log('Added user to sealed group.')
 
         # Fixes
-        os.system("sudo usermod -aG bluetooth edoardo")
-        os.system("sudo usermod -aG netdev edoardo")
-        self.log('Added user to netdev and bluetooth group (fixes).')
+        # os.system("sudo usermod -aG bluetooth edoardo")
+        # os.system("sudo usermod -aG netdev edoardo")
+        # self.log('Added user to netdev and bluetooth group (fixes).')
         
         # Schedule remove user from group
         #os.system(f"echo 'sudo gpasswd -d edoardo sealed' | at now + {duration_command}")
         #self.log(f'Scheduled: remove user from sealed group at {duration_command}')
         
         # Fixes
-        os.system(f"echo 'sudo gpasswd -d edoardo bluetooth' | at now + {duration_command}")
-        os.system(f"echo 'sudo gpasswd -d edoardo netdev' | at now + {duration_command}")
-        self.log(f'Scheduled remove user from netedev and bluetooth group at {duration_command}.')
+        # os.system(f"echo 'sudo gpasswd -d edoardo bluetooth' | at now + {duration_command}")
+        # os.system(f"echo 'sudo gpasswd -d edoardo netdev' | at now + {duration_command}")
+        # self.log(f'Scheduled remove user from netedev and bluetooth group at {duration_command}.')
         
-        # Shcedule add back privileges
-        os.system(f"echo 'sudo usermod -aG {sudo_group} edoardo' | at now + {duration_command}")
-        self.log(f'Scheduled to give back permissions to user at {duration_command}.')
+        

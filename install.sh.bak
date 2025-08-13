@@ -9,10 +9,10 @@ readonly SEALED="/usr/local/bin/sealed"
 readonly SUDOERS="/etc/sudoers.d/$GROUP_NAME"
 
 ##########
-sudo pacman -Syu
-sudo pacman -S --needed python3
-sudo pacman -S --needed tk
-sudo pacman -S --needed at
+dnf update
+dnf install python3 -y
+dnf install python3-tk -y
+dnf install at -y
 
 #make executable files:
 chmod +x main.py
@@ -23,20 +23,16 @@ chmod +x ./support/Sealed.desktop
 
 # Permissions and blocks
 sudo groupadd "$GROUP_NAME"
-echo 'Created new group $GROUP_NAME'
 sudo usermod -aG sealed edoardo
-echo 'Added edoardo to new group'
 
 # Main App
 mkdir -p "$APP_PATH"
 cp main.py "$APP_PATH"
-echo 'copied main.py'
 cp -r functions "$APP_PATH"
-echo 'copied functions'
 cp -r ./support/Sealed.desktop /usr/share/applications/Sealed.desktop
-echo 'copied desktop launcher'
+
 cp ./support/sealed /etc/sudoers.d/sealed
-echo 'copied sudoers'
+
 #cp ./support/exec.sh "$SEALED"
 
 # bash -c "EDITOR='tee' visudo -f $SUDOERS" <<EOF

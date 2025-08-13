@@ -6,10 +6,19 @@ from functions.website_blocker import WebsiteBlocker
 
 
 # Initialize the Tkinter application
-app = tk.Tk()
-app.title("Sealed")
-app.geometry("400x400")
-app.resizable(False, False)
+root = tk.Tk()
+root.title("Sealed")
+root.geometry("400x400")
+root.resizable(False, False)
+# Set up styles
+style = ttk.Style(root)
+style.theme_use("clam")  # set theme first
+style.configure("Accent.TButton", font=("Helvetica", 12), padding=10)
+style.configure("Danger.TButton", font=("Helvetica", 12), padding=10)
+style.configure("TLabel", font=("Helvetica", 12))
+
+app = ttk.Frame(root, padding=16)
+app.pack(fill="both", expand=True)
 
 # Ensure the required folder and files exist
 sealed = SealedStructure().check_files_structure()
@@ -18,13 +27,6 @@ sealed = SealedStructure().check_files_structure()
 # Create an instance of WebsiteBlocker
 blocker = WebsiteBlocker(app, sealed)
 
-
-
-# Set up styles
-style = ttk.Style(app)
-style.configure("Accent.TButton", font=("Helvetica", 12), padding=10)
-style.configure("Danger.TButton", font=("Helvetica", 12), padding=10)
-style.configure("TLabel", font=("Helvetica", 12))
 
 # Determine initial button text and status
 if blocker.getWebsiteBlockStatus():

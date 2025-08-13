@@ -96,7 +96,7 @@ class WebsiteBlocker:
         os.system(f"sudo mkdir -p '{self.backup_dir}'")
         # Need to use this command because getfacl -R '{path}' will save the path without "/" in front of it
         # and thus the restore command will not find the path.
-        os.system(f"getfacl -R '{path}' | sed 's|^# file: |# file: /|' > '{backup_file}'")
+        os.system(f"getfacl --absolute-names -R '{path}' > '{backup_file}'")
 
         # Step 2: Restrict access to root
         os.system(f"sudo chown -R root:root '{path}'")
@@ -107,6 +107,7 @@ class WebsiteBlocker:
             f"sudo setfacl --restore='{backup_file}' && "
             f"sudo rm -f '{backup_file}'"
         )
+        
         os.system(f'echo "{restore_command}" | at {self.sealed.get_strict_mode_end(raw=True)}')
 
         self.sealed.log(f"Folder '{path}' is now restricted.")
