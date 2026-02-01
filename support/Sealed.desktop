@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Sealed
-Exec=sudo /usr/bin/python3 /usr/local/bin/sealed_support/main.py
-Type=Application
-Terminal=false

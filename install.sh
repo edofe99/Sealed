@@ -1,44 +1,54 @@
-if [ "$EUID" -ne 0 ]; then
-    die "Please run as root"
+#!/usr/bin/env bash
+#set -Eeuo pipefail
+
+# Re-run as root if needed
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  exec sudo -- "$0" "$@"
 fi
 
-##########
-readonly GROUP_NAME="sealed"
-readonly APP_PATH="/usr/local/bin/sealed_support"
-readonly SEALED="/usr/local/bin/sealed"
-readonly SUDOERS="/etc/sudoers.d/$GROUP_NAME"
+SRC_MAIN="./main.py"
+SRC_APP_DIR="./app_functions"
+SRC_ASSETS_DIR="./assets"
+DEST_DIR="/usr/local/bin/sealed"
+DEST_APP="${DEST_DIR}/sealed"
+VENV_DIR="${DEST_DIR}/.venv"
 
-##########
-sudo pacman -Syu
-sudo pacman -S --needed python3
-sudo pacman -S --needed tk
-sudo pacman -S --needed at
 
-#make executable files:
-chmod +x main.py
-chmod +x ./functions/static.py
-chmod +x ./functions/website_blocker.py
-chmod +x ./support/exec.sh
-chmod +x ./support/Sealed.desktop
+# Sanity checks
+[[ -f "$SRC_MAIN" ]] || { echo "Error: $SRC_MAIN not found."; exit 1; }
+[[ -d "$SRC_APP_DIR" ]] || { echo "Error: $SRC_APP_DIR directory not found."; exit 1; }
+command -v python3 >/dev/null 2>&1 || { echo "Error: python3 not found in PATH."; exit 1; }
 
-# Permissions and blocks
-sudo groupadd "$GROUP_NAME"
-echo 'Created new group $GROUP_NAME'
-sudo usermod -aG sealed edoardo
-echo 'Added edoardo to new group'
+# Create destination directory
+rm -rf "$DEST_DIR/app_functions"
+mkdir -p "$DEST_DIR"
 
-# Main App
-mkdir -p "$APP_PATH"
-cp main.py "$APP_PATH"
-echo 'copied main.py'
-cp -r functions "$APP_PATH"
-echo 'copied functions'
-cp -r ./support/Sealed.desktop /usr/share/applications/Sealed.desktop
-echo 'copied desktop launcher'
-cp ./support/sealed /etc/sudoers.d/sealed
-echo 'copied sudoers'
-#cp ./support/exec.sh "$SEALED"
+# Move main.py to destination as "sealed"
+cp "$SRC_MAIN" "$DEST_APP"
 
-# bash -c "EDITOR='tee' visudo -f $SUDOERS" <<EOF
-# %$GROUP_NAME ALL = $SEALED
-# EOF
+# Create virtual environment if missing
+rm -rf $VENV_DIR
+if [[ ! -d "$VENV_DIR" ]]; then
+  python3 -m venv "$VENV_DIR"
+fi
+
+# Upgrade pip and install ttkbootstrap
+"$VENV_DIR/bin/pip" install --upgrade pip
+"$VENV_DIR/bin/pip" install ttkbootstrap
+
+# Make the "sealed" file executable
+chmod +x "$DEST_APP"
+
+# Make the desktop file executable
+chmod +x "$SRC_ASSETS_DIR/sealed.desktop"
+cp "$SRC_ASSETS_DIR/sealed.desktop" /usr/share/applications/sealed.desktop
+cp "$SRC_ASSETS_DIR/sealed.png" "$DEST_DIR/sealed.png"
+
+# Move app_functions into destination
+# Remove existing target to ensure a clean move
+cp -r "$SRC_APP_DIR" "${DEST_DIR}/app_functions"
+
+echo "Installation complete:
+- App:        $DEST_APP
+- Venv:       $VENV_DIR
+- Modules:    ${DEST_DIR}/app_functions"
