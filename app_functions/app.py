@@ -3,10 +3,7 @@ from tkinter import ttk, messagebox, simpledialog
 import os
 from ttkbootstrap import Style
 from ttkbootstrap.dialogs import Querybox
-
 from app_functions.app_setup import SealedSetup, SealedOperations
-import app_functions.gui_functions as gui
-
 
 class SealedApp:
     """Composition (no inheritance from tk.Tk)."""
