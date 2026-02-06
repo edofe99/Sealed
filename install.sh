@@ -50,7 +50,7 @@ cp "$SRC_ASSETS_DIR/sealed.png" "$DEST_DIR/sealed.png"
 
 # Move app_functions into destination
 # Remove existing target to ensure a clean move
-rm -rf "$SRC_APP_DIR"
+# rm -rf "$DEST_DIR"
 cp -r "$SRC_APP_DIR" "${DEST_DIR}"
 
 # Make a symlink so we can execute it

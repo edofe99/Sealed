@@ -7,34 +7,35 @@ from typing import Any
 from src.utils import run_cmd, schedule_run_cmd, log, is_block_active
 from src.defaults import PERMISSIONS_BACKUP_DIR, FILE_FOLDERS_TO_BLOCK, RESTORE_SCRIPT
 
-def _make_file_folder_read_only(file_folder):
+def _make_file_non_executable(file_folder):
     '''
     Changes permissions of a file / folder so that only root can edit / execute it
     '''
     # create a folder in the sealed install directory where to store a backup for permissions
     # ensure backup directory exists and save permissions
-    run_cmd(['mkdir','-p',f"'{PERMISSIONS_BACKUP_DIR}'"])
+    run_cmd(['mkdir','-p', str(PERMISSIONS_BACKUP_DIR)])
 
     # create backup filename
     backup_file = PERMISSIONS_BACKUP_DIR / f"{Path(file_folder).parent.name}_{os.path.basename(file_folder)}.bak"
 
     # Need to use this command because getfacl -R '{path}' will save the path without "/" in front of it
     # and thus the restore command will not find the path.
-    os.system(f'getfacl --absolute-names -R "{file_folder}" > "{backup_file}"')
+    run_cmd(["/bin/sh","-c",f'/usr/bin/getfacl --absolute-names -R "{file_folder}" > "{backup_file}"'])
     
-    # folders: readable + traversable
-    run_cmd(["find",file_folder,"-type", "d","-exec", "chmod", "555", "{}", "+"])
+    # # folders: readable + traversable
+    # run_cmd(["find",str(file_folder),"-type", "d","-exec", "chmod", "555", "{}", "+"])
 
-    # files: readable only
-    run_cmd(["find",file_folder,"-type", "f","-exec", "chmod", "444", "{}", "+"])
-
-
-    # Also make the file immutable to prevent changes
-    _make_file_folder_immutable(file_folder)
+    # # files: readable only
+    # run_cmd(["find",str(file_folder),"-type", "f","-exec", "chmod", "444", "{}", "+"])
+    
+    # If it is a file then make it executable only by root
+    if file_folder.is_file():
+        run_cmd(["chown", "root:root", str(file_folder)])
+        run_cmd(["chmod", "700", str(file_folder)])
 
 
 def _make_file_folder_immutable(file_folder):
-    run_cmd(["chattr","-R","+i",file_folder])
+    run_cmd(["chattr","-R","+i",str(file_folder)])
 
 
 def block_file_folder(file_folder_to_block: str | Path | None = None, block_execution: bool = False, schedule_restore : int = None) -> None:
@@ -96,11 +97,13 @@ def block_file_folder(file_folder_to_block: str | Path | None = None, block_exec
         if not isinstance(exec_block, bool):
             raise RuntimeError(f"Entry #{i} 'block_execution' must be boolean")
 
-        # ---- actions ----
+        # First we change permissions (optional)
+        if exec_block:
+            _make_file_non_executable(p)
+        
+        # Then we make immutable
         _make_file_folder_immutable(p)
 
-        if exec_block:
-            _make_file_folder_read_only(p)
 
     if schedule_restore:
         schedule_run_cmd([str(RESTORE_SCRIPT)],minutes=schedule_restore)

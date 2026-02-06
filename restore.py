@@ -90,5 +90,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # First we restore immutability
     remove_immutability()
+    # Then we restore permissions
     restore_acl_backups()

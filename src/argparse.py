@@ -27,7 +27,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             "  sealed --remaining\n"
             "  sealed --check-sudoers\n"
             "  sealed --add-file-folder /abs/path/to/thing\n"
-            "  sealed --add-file-folder /abs/path/to/thing --make-ro\n"
+            "  sealed --add-file-folder /abs/path/to/thing --no-exec\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter,  # keeps newlines in description/epilog
         add_help=True,
@@ -81,7 +81,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
 
     p.add_argument(
-        "--make-ro",
+        "--no-exec",
         action="store_true",
         help="When used with --add-file-folder, makes the file owned by root and non-executable during the block.",
     )
@@ -94,24 +94,24 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     
     # --check-sudoers alone
     if args.check_sudoers:
-        if args.block is not None or args.exception or args.remaining or args.block_files_folders or args.add_file_folder or args.make_ro:
+        if args.block is not None or args.exception or args.remaining or args.block_files_folders or args.add_file_folder or args.no_exec:
             p.error("--check-sudoers can only be run alone")
         return args
 
     # --remaining alone
     if args.remaining:
-        if args.block is not None or args.exception or args.block_files_folders or args.add_file_folder or args.make_ro:
+        if args.block is not None or args.exception or args.block_files_folders or args.add_file_folder or args.no_exec:
             p.error("--remaining can only be run alone")
         return args
 
-    # --make-ro requires --add-file-folder
-    if args.make_ro and args.add_file_folder is None:
-        p.error("--make-ro can't be run alone (requires --add-file-folder)")
+    # --no-exec requires --add-file-folder
+    if args.no_exec and args.add_file_folder is None:
+        p.error("--no-exec can't be run alone (requires --add-file-folder)")
 
-    # --add-file-folder mode (only allowed with optional --make-ro)
+    # --add-file-folder mode (only allowed with optional --no-exec)
     if args.add_file_folder is not None:
         if args.block is not None or args.exception or args.block_files_folders:
-            p.error("--add-file-folder can only be used with optional --make-ro (no other flags)")
+            p.error("--add-file-folder can only be used with optional --no-exec (no other flags)")
         args.add_file_folder = args.add_file_folder.expanduser().resolve()
         if not args.add_file_folder.is_absolute():
             p.error(f"--add-file-folder must be an absolute path: {args.add_file_folder}")
@@ -167,7 +167,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         return 0
 
     if args.add_file_folder:
-        add_file_folder(args.add_file_folder, args.make_ro)
+        add_file_folder(args.add_file_folder, args.no_exec)
         return 0
 
 
