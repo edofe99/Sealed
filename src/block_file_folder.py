@@ -181,10 +181,11 @@ def remove_file_folder(file_folder_path: Path):
         return
 
     # Remove matching entry
-    data = [entry for entry in data if entry.get("path") != file_folder_path]
+    data = [entry for entry in data if entry.get("path") != str(file_folder_path)]
 
     # Double check that actually the input file/folder does not exist
     if not file_folder_path.exists(): 
+        log(f'Removing {file_folder_path} from block list because path does not exist.')
         # Save file
         with FILE_FOLDERS_TO_BLOCK.open("w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
