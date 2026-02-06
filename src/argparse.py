@@ -1,8 +1,12 @@
 import argparse
 import sys
+from pathlib import Path
+from typing import Optional, Sequence, Union, Iterable
 
-from src.block_root import is_block_active
-from typing import Optional, Sequence
+from src.block_root import system_block
+from src.defaults import BLOCK_FILE, ExceptionType
+from src.utils import startup_checks, format_exceptions_args, log, is_block_active
+from src.block_file_folder import add_file_folder
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
@@ -19,9 +23,11 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             "Examples:\n"
             "  sealed --block 10\n"
             "  sealed --block 10 --exception \"/usr/bin/pacman -Rns -- *\"\n"
-            "  sealed --block 10 --exception \"/usr/bin/timeshift --list\" --exception \"/usr/bin/dnf remove *\"\n"
+            "  sealed --block 10 --exception \"/usr/bin/timeshift\" --exception \"/usr/bin/dnf remove *\"\n"
             "  sealed --remaining\n"
             "  sealed --check-sudoers\n"
+            "  sealed --add-file-folder /abs/path/to/thing\n"
+            "  sealed --add-file-folder /abs/path/to/thing --make-ro\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter,  # keeps newlines in description/epilog
         add_help=True,
@@ -60,27 +66,108 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         help="Ensure that Sealed can be run by user as root even when a block is active.",
     )
 
+    # -------------------------- FILE / FODLER BLOCKING -------------------------- #
+    p.add_argument(
+        "--block-files-folders",
+        action="store_true",
+        help="Block files and folder during the next session.",
+    )
+
+    p.add_argument(
+        "--add-file-folder",
+        metavar="PATH",
+        type=Path,
+        help="Add an absolute file/folder path to FILE_FOLDERS_TO_BLOCK.",
+    )
+
+    p.add_argument(
+        "--make-ro",
+        action="store_true",
+        help="When used with --add-file-folder, makes the file owned by root and non-executable during the block.",
+    )
+
     args = p.parse_args(argv)
 
     # ---------------------------------------------------------------------------- #
     #                                  ARGS CHECKS                                 #
     # ---------------------------------------------------------------------------- #
     
-    # --remaining is standalone
-    if args.remaining or args.check_sudoers:
-        if args.block is not None or args.exception:
-            p.error(f"{" ".join(sys.argv)} cannot be combined with --block/--exceptions")
+    # --check-sudoers alone
+    if args.check_sudoers:
+        if args.block is not None or args.exception or args.remaining or args.block_files_folders or args.add_file_folder or args.make_ro:
+            p.error("--check-sudoers can only be run alone")
         return args
 
-    # Otherwise must provide --block
+    # --remaining alone
+    if args.remaining:
+        if args.block is not None or args.exception or args.block_files_folders or args.add_file_folder or args.make_ro:
+            p.error("--remaining can only be run alone")
+        return args
+
+    # --make-ro requires --add-file-folder
+    if args.make_ro and args.add_file_folder is None:
+        p.error("--make-ro can't be run alone (requires --add-file-folder)")
+
+    # --add-file-folder mode (only allowed with optional --make-ro)
+    if args.add_file_folder is not None:
+        if args.block is not None or args.exception or args.block_files_folders:
+            p.error("--add-file-folder can only be used with optional --make-ro (no other flags)")
+        args.add_file_folder = args.add_file_folder.expanduser().resolve()
+        if not args.add_file_folder.is_absolute():
+            p.error(f"--add-file-folder must be an absolute path: {args.add_file_folder}")
+        return args
+
+    # --exception requires --block
+    if args.exception and args.block is None:
+        p.error("--exception requires --block")
+
+    # --block-files-folders requires --block
+    if args.block_files_folders and args.block is None:
+        p.error("--block-files-folders requires --block")
+
+    # must have --block if we got here
     if args.block is None:
-        p.error("Missing parameters.")
+        p.error("Missing parameters. Use --block, --remaining, --check-sudoers, or --add-file-folder.")
 
-    elif args.block <= 0:
+    if args.block <= 0:
         p.error("--block MINUTES must be a positive integer.")
-    
-    elif args.block > 0 and is_block_active():
-        raise RuntimeError("You are already inside a sealed session")
 
-    # --exceptions allowed only with --block (already ensured)
+    if is_block_active() and args.block is not None:
+        raise RuntimeError("You are already inside a sealed session")
+    
     return args
+
+
+def run(argv: Optional[Sequence[str]] = None) -> int:
+    args = parse_args(argv)
+
+    if args.check_sudoers:
+        user = startup_checks()
+        log(f'Sudoers permissions set for {user}')
+        return 0
+
+    if args.remaining:
+        try:
+            print(BLOCK_FILE.read_text(encoding="utf-8"), end="")
+        except FileNotFoundError:
+            print(f"block file not found: {BLOCK_FILE}", file=sys.stderr)
+            return 1
+        except OSError as e:
+            print(f"failed to read block file {BLOCK_FILE}: {e}", file=sys.stderr)
+            return 1
+        return 0
+
+    
+    exceptions: Union[ExceptionType, Iterable[ExceptionType], None] = None
+    if args.exception:
+        exceptions = format_exceptions_args(args.exception)
+
+    if args.block:
+        system_block(minutes=args.block,exceptions=exceptions,block_file_folders=args.block_files_folders)
+        return 0
+
+    if args.add_file_folder:
+        add_file_folder(args.add_file_folder, args.make_ro)
+        return 0
+
+

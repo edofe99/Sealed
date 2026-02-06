@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import src.utils as utils
 # from src.website_blocker import leechblock
 from src.defaults import BLOCK_FILE, ExceptionType
-
+from src.block_file_folder import block_file_folder
 
 def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
     '''
@@ -30,35 +30,12 @@ def _block_root_access(minutes: int) -> None:
     utils.run_cmd(block_root_cmd)
 
 
-def is_block_active():
-    try:
-        # .strip() removes any accidental newlines or spaces
-        time_str = BLOCK_FILE.read_text().strip()
-
-        # 2. Convert the string to a datetime object
-        file_time = datetime.strptime(time_str, "%Y-%m-%d %H:%M")
-
-        # 3. Compare with the current time
-        now = datetime.now()
-
-        if file_time <= now:
-            utils.run_cmd(['rm',str(BLOCK_FILE)])
-            return False
-        elif file_time > now:
-            return True
-        
-    except FileNotFoundError, ValueError:
-        utils.log("Block file not found")
-        return False
-
-
-def system_block(block_root = True, exclude_user_from_root = True, minutes = 60, leechblock_blocker = True, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
+def system_block(block_root = True, exclude_user_from_root = True, minutes = 60, leechblock_blocker = True, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None, block_file_folders : bool = False):
 
     # ------------------------------ Initial checks ------------------------------ #
     user = utils.startup_checks()
     
     if exclude_user_from_root:
-        utils.log(exceptions)
         _block_user_access_to_root(user, minutes, exceptions)
 
     if block_root:
@@ -66,5 +43,10 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
     
     # if leechblock_blocker:
     #     leechblock.check_policy()
+
+    if block_file_folders:
+        utils.log('Blocking file folders')
+        block_file_folder(schedule_restore=minutes)
+
 
     BLOCK_FILE.write_text((datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M") + "\n")

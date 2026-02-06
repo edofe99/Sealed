@@ -6,7 +6,7 @@ from typing import Optional, Iterable, Union, List
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from src.defaults import SubprocessCommand, ExceptionType, DEFAULT_EXCEPTIONS
+from src.defaults import SubprocessCommand, ExceptionType, DEFAULT_EXCEPTIONS, BLOCK_FILE
 
 
 def log(*message : str):
@@ -192,10 +192,8 @@ def format_exceptions_args(input: Union[str, List[str]]):
 
             if not arg_part.strip():
                 exceptions.append(bin_path)
-                log(exceptions)
             else:
                 exceptions.append((bin_path, arg_part.strip()))
-                log(exceptions)
         else:
             bin_path = Path(raw)
             if not bin_path.is_absolute():
@@ -204,3 +202,24 @@ def format_exceptions_args(input: Union[str, List[str]]):
             exceptions.append(bin_path)
 
     return exceptions
+
+def is_block_active():
+    try:
+        # .strip() removes any accidental newlines or spaces
+        time_str = BLOCK_FILE.read_text().strip()
+
+        # 2. Convert the string to a datetime object
+        file_time = datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+
+        # 3. Compare with the current time
+        now = datetime.now()
+
+        if file_time <= now:
+            run_cmd(['rm',str(BLOCK_FILE)])
+            return False
+        elif file_time > now:
+            return True
+        
+    except FileNotFoundError, ValueError:
+        # log("Block file not found")
+        return False
