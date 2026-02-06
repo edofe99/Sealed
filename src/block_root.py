@@ -1,25 +1,24 @@
 from typing import Iterable, Union
-from pathlib import Path
 from datetime import datetime, timedelta
 
 import src.utils as utils
 # from src.website_blocker import leechblock
-from src.defaults import BLOCK_FILE
+from src.defaults import BLOCK_FILE, ExceptionType
 
 
-def _block_user_access_to_root(user, minutes, exceptions : Union[Path, Iterable[Path]] = None):
+def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
     '''
     Prevent the user to execute commands as root (i.e. sudo)
     '''
 
     # ----------------- Block user from running commands as root ----------------- #
 
-    utils.add_sudoers_permission(user=user, priority=50, filename='sealed_deny_root',exceptions=None, schedule_removal = minutes)
+    utils.add_sudoers_permission(user=user, priority=50, filename='sealed-deny-root',exceptions=None, schedule_removal = minutes)
 
     # -------------------------- Allow certain commands -------------------------- #
 
     if exceptions:
-        utils.add_sudoers_permission(user = user, priority = 90 , filename = 'sealed_extra_exceptions', exceptions = exceptions, schedule_removal = minutes)
+        utils.add_sudoers_permission(user = user, priority = 90 , filename = 'sealed-extra-exceptions', exceptions = exceptions, schedule_removal = minutes)
 
 
 def _block_root_access(minutes: int) -> None:
@@ -49,15 +48,17 @@ def is_block_active():
             return True
         
     except FileNotFoundError, ValueError:
-        print("Error: The file does not exist or is invalid.")
+        utils.log("Block file not found")
+        return False
 
 
-def system_block(block_root = True, exclude_user_from_root = True, minutes = 60, leechblock_blocker = True, exceptions : Union[Path, Iterable[Path]] = None):
+def system_block(block_root = True, exclude_user_from_root = True, minutes = 60, leechblock_blocker = True, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
 
     # ------------------------------ Initial checks ------------------------------ #
     user = utils.startup_checks()
     
     if exclude_user_from_root:
+        utils.log(exceptions)
         _block_user_access_to_root(user, minutes, exceptions)
 
     if block_root:

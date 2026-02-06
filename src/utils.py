@@ -2,11 +2,11 @@ import os
 import shlex
 import subprocess
 import shutil
-from typing import Optional, Iterable, Union
+from typing import Optional, Iterable, Union, List
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from src.defaults import SubprocessCommand, ExceptionType, SEALED_BIN, DEFAULT_EXCEPTIONS
+from src.defaults import SubprocessCommand, ExceptionType, DEFAULT_EXCEPTIONS
 
 
 def log(*message : str):
@@ -93,7 +93,6 @@ def add_sudoers_permission(user : str, priority : str, filename : str, exception
 
 
     lines: list[str] = []
-
     if exceptions:
         if not isinstance(exceptions, (list, tuple, set)):
             exceptions = [exceptions]
@@ -171,8 +170,37 @@ def startup_checks() -> str:
     # ---------------- Check sudoers exceptions for sealed exissts --------------- #
     
     # Add Sealed binary exception and default ones
-    add_sudoers_permission(user, "90", "sealed", DEFAULT_EXCEPTIONS.append(SEALED_BIN))
+    add_sudoers_permission(user, "90", "sealed-default-exceptions", exceptions = DEFAULT_EXCEPTIONS)
     
     return user
 
+def format_exceptions_args(input: Union[str, List[str]]):
+    '''
+    We need to turn a string into a proper exception type
+    --exceptions "/usr/bin/pacman" -> exceptions = [Path("/usr/bin/pacman")]
+    --exceptions "/usr/bin/pacman -Rns -- *" -> exceptions = [(Path("/usr/bin/pacman"), "-Rns -- *")]
+    '''
+    exceptions = []
+    for raw in input:
+        raw = raw.strip()
+        # split only on FIRST space
+        if " " in raw:
+            bin_part, arg_part = raw.split(" ", 1)
+            bin_path = Path(bin_part)
+            if not bin_path.is_absolute():
+                raise RuntimeError(f"{bin_path} is not an absolute path")
 
+            if not arg_part.strip():
+                exceptions.append(bin_path)
+                log(exceptions)
+            else:
+                exceptions.append((bin_path, arg_part.strip()))
+                log(exceptions)
+        else:
+            bin_path = Path(raw)
+            if not bin_path.is_absolute():
+                raise RuntimeError(f"{bin_path} is not an absolute path")
+
+            exceptions.append(bin_path)
+
+    return exceptions

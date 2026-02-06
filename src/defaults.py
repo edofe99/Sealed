@@ -8,6 +8,7 @@ BLOCK_FILE = SEALED_DIR / "block.txt"
 
 # Allow running atq for checking at queue
 DEFAULT_EXCEPTIONS = [
+    SEALED_BIN,
     Path('/usr/bin/atq'),
     (Path('/usr/bin/dnf'),'remove *'),
     (Path('/usr/bin/pacman'),'-Rns *'),
