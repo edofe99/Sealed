@@ -8,6 +8,7 @@
 - Barebone log display in terminal at every command run.
 - Now you can run directly from terminal by typing `sudo sealed`.
 - From now on there will be two ways to run the app: cli and GUI. For the moment CLI is implemented, GUI has just to be updated to use the new code for core mechanics.
+- You can add exceptions to `sudo` commands, for example you can block everything but `sudo pacman -S *`.
 
 ### Changed
 

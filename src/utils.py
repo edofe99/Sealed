@@ -6,7 +6,7 @@ from typing import Optional, Iterable, Union
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from src.defaults import SubprocessCommand, SEALED_BIN
+from src.defaults import SubprocessCommand, ExceptionType, SEALED_BIN, DEFAULT_EXCEPTIONS
 
 
 def log(*message : str):
@@ -77,34 +77,59 @@ def schedule_run_cmd(command_to_schedule: SubprocessCommand, minutes: int) -> su
 
     return run_cmd(schedule_cmd, stdin_text=job_script)
 
-def add_sudoers_permission(user : str, priority : str, filename : str, exceptions : Union[Path, Iterable[Path], None], schedule_removal : int = False):
+
+
+def add_sudoers_permission(user : str, priority : str, filename : str, exceptions : Union[ExceptionType, Iterable[ExceptionType], None], schedule_removal : int = False):
     '''
     Makes a sudoers.d file with following options:
     - exceptions : Path, Iterable[Path] -> creates a sudoers.d file that allows to run the given paths to binaries without root privilege
     - exceptions : None -> creates a sudoers.d file that prevent the user to run any command as root
+    - exceptiosn -> Instead of Path you can pass Union[Path, str] where strings are commands, i.e. you can add exception for [Path('/usr/bin/pacman'), "-Rns *"]
     - schedule_deletion -> if you pass an integer then the permission file will be deleted after that amount of minutes
     '''
 
     sudoers_permissions_filename = f"{priority}-{user}-{filename}"
     sudoers_permissions_filepath = str(Path("/etc/sudoers.d") / sudoers_permissions_filename)
 
-    lines = []
-    # If there are exceptions then create a sudoers file that allows running said commands as root
-    if exceptions:
-        # if exception is not a list then make it a list
-        if isinstance(exceptions, Path):
-            exceptions = [exceptions]
-        
-        # Remove duplicates and resolve paths
-        # exceptions = list({p.resolve() for p in exceptions})
-        exceptions = list({p for p in exceptions})
 
-        for exception_path in exceptions:
-            # ensure absolute paths (sudoers requirement)
-            if not exception_path.is_absolute():
-                raise RuntimeError(f"{exception_path} is not an absolute path and can't be placed in sudoers file.")
-            
-            lines.append(f"{user} ALL=(root) NOPASSWD: {exception_path}")
+    lines: list[str] = []
+
+    if exceptions:
+        if not isinstance(exceptions, (list, tuple, set)):
+            exceptions = [exceptions]
+
+        # de-duplicate
+        exceptions = list(dict.fromkeys(exceptions))
+
+        for exc in exceptions:
+            # case 1: Path only → allow binary with any args
+            if isinstance(exc, Path):
+                if not exc.is_absolute():
+                    raise RuntimeError(f"{exc} is not absolute")
+
+                lines.append(
+                    f"{user} ALL=(root) NOPASSWD: {exc}"
+                )
+
+            # case 2: (Path, args)
+            elif isinstance(exc, tuple) and len(exc) == 2:
+                binary, args = exc
+
+                if not isinstance(binary, Path):
+                    raise RuntimeError(f"{binary} is not a Path")
+
+                if not binary.is_absolute():
+                    raise RuntimeError(f"{binary} is not absolute")
+
+                if not isinstance(args, str) or not args.strip():
+                    raise RuntimeError("Command arguments must be a non-empty string")
+
+                lines.append(
+                    f"{user} ALL=(root) NOPASSWD: {binary} {args}"
+                )
+
+            else:
+                raise RuntimeError(f"Invalid sudoers exception: {exc}")
     
     # If there are no exceptions then make a sudoers.d file that prevents user from running commands as sudo
     if not exceptions:
@@ -145,14 +170,8 @@ def startup_checks() -> str:
     
     # ---------------- Check sudoers exceptions for sealed exissts --------------- #
     
-    # Allow running atq for checking at queue
-    DEFAULT_EXCEPTIONS = [Path('/usr/bin/atq')]
-
-    # Add sealed executable
-    DEFAULT_EXCEPTIONS.append(SEALED_BIN)
-
     # Add Sealed binary exception and default ones
-    add_sudoers_permission(user, "90", "sealed", DEFAULT_EXCEPTIONS)
+    add_sudoers_permission(user, "90", "sealed", DEFAULT_EXCEPTIONS.append(SEALED_BIN))
     
     return user
 
