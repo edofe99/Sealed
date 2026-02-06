@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.1 - 2026-02-06
+
+### Fixed
+
+- Fixed a bug where files immutability wouldn't properly restore due to folders with symlinks like Python virtual environments.
+
+
 ## 3.0 - 2026-02-06
 
 ### Added
