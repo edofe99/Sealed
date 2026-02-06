@@ -3,3 +3,6 @@ ignore/
 old_versions
 tests
 todo.md
+_*
+website_blocker
+files_blocker
