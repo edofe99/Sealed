@@ -35,7 +35,9 @@ def _make_file_non_executable(file_folder):
 
 
 def _make_file_folder_immutable(file_folder):
-    run_cmd(["chattr","-R","+i",str(file_folder)])
+    # With this we need to skip_check because sometimes chattr can't make sub-file/folders immutable
+    # like with .venv, so we just continue without halting the code because of those
+    run_cmd(["chattr","-R","+i",str(file_folder)], skip_check = True)
 
 
 def block_file_folder(file_folder_to_block: str | Path | None = None, block_execution: bool = False, schedule_restore : int = None) -> None:
@@ -50,6 +52,9 @@ def block_file_folder(file_folder_to_block: str | Path | None = None, block_exec
       - path (absolute)
       - block_execution (bool)
     """
+    # For safety we first schedule file restore, so if any error during blocking file we are able to still restore
+    if schedule_restore:
+        schedule_run_cmd([str(RESTORE_SCRIPT)],minutes=schedule_restore)
 
     # ---- normalize input into `data` ----
     if file_folder_to_block is not None:
@@ -103,10 +108,6 @@ def block_file_folder(file_folder_to_block: str | Path | None = None, block_exec
         
         # Then we make immutable
         _make_file_folder_immutable(p)
-
-
-    if schedule_restore:
-        schedule_run_cmd([str(RESTORE_SCRIPT)],minutes=schedule_restore)
 
 def add_file_folder(file_folder: Path, block_execution: bool = False) -> None:
     """

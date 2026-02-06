@@ -33,15 +33,18 @@ def remove_immutability() -> None:
             if not p.exists():
                 raise RuntimeError(f"Entry #{i} path does not exist: {p}")
 
-            run_cmd(["/usr/bin/chattr", "-R", "-i", str(p)])
+            run_cmd(["/usr/bin/chattr", "-R", "-i", str(p)], skip_check = True)
 
         except Exception as e:
             log(f"[WARN] Skipping entry #{i}: {e}")
             continue
 
 def restore_acl_backups() -> None:
+
     if not PERMISSIONS_BACKUP_DIR.is_dir():
-        raise RuntimeError(f"Backup directory not found: {PERMISSIONS_BACKUP_DIR}")
+        # No backup permission folder -> no permissions to restore
+        return 
+        # raise RuntimeError(f"Backup directory not found: {PERMISSIONS_BACKUP_DIR}")
 
     for bak in PERMISSIONS_BACKUP_DIR.iterdir():
         try:

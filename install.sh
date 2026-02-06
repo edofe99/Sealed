@@ -42,6 +42,8 @@ fi
 
 # Make the "sealed" file executable
 chmod +x "$DEST_APP"
+chmod +x "$DEST_RESTORE"
+
 
 # Make the desktop file executable
 chmod +x "$SRC_ASSETS_DIR/sealed.desktop"
