@@ -5,7 +5,7 @@
 ### Fixed
 
 - Fixed a bug where files immutability wouldn't properly restore due to folders with symlinks like Python virtual environments.
-
+- If the file/folders to block list point to a file/folder that do not exist anymore then it will be removed from the list.
 
 ## 3.0 - 2026-02-06
 

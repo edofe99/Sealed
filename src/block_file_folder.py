@@ -98,6 +98,10 @@ def block_file_folder(file_folder_to_block: str | Path | None = None, block_exec
         if not p.is_absolute():
             raise RuntimeError(f"Entry #{i} path must be absolute: {p}")
 
+        if not p.exists():
+            remove_file_folder(p)
+            continue
+
         exec_block = entry.get("block_execution", False)
         if not isinstance(exec_block, bool):
             raise RuntimeError(f"Entry #{i} 'block_execution' must be boolean")
@@ -166,3 +170,21 @@ def add_file_folder(file_folder: Path, block_execution: bool = False) -> None:
     if is_block_active():
         block_file_folder(file_folder, block_execution)
 
+def remove_file_folder(file_folder_path: Path):
+    
+    # Load file/folder list to block
+    if FILE_FOLDERS_TO_BLOCK.exists():
+        with FILE_FOLDERS_TO_BLOCK.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    else:
+        # If no list then go out
+        return
+
+    # Remove matching entry
+    data = [entry for entry in data if entry.get("path") != file_folder_path]
+
+    # Double check that actually the input file/folder does not exist
+    if not file_folder_path.exists(): 
+        # Save file
+        with FILE_FOLDERS_TO_BLOCK.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
