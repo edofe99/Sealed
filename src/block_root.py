@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import src.utils as utils
 import src.leechblock as leechblock
-from src.defaults import BLOCK_FILE, ExceptionType, POLICIES_FILE
+from src.defaults import BLOCK_FILE, ExceptionType
 from src.block_file_folder import block_file_folder
 
 def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
