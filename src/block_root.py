@@ -59,4 +59,26 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
 
     block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
     utils.log(f'BLOCK ACTIVE UNTIL {block_end}')
+    
+    import os
+    import pwd
+
+    user = utils.get_current_user()
+    uid = int(os.environ.get("SUDO_UID") or pwd.getpwnam(user).pw_uid)
+
+    utils.run_cmd([
+        "runuser", "-u", user, "--",
+        "env",
+        f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
+        f"XDG_RUNTIME_DIR=/run/user/{uid}",
+        f"DISPLAY={os.environ.get('DISPLAY', ':0')}",
+        "notify-send",
+        "--urgency=normal",
+        "--app-name=Sealed",
+        "--expire-time=10000",
+        "--transient",
+        "Sealed",
+        f"BLOCK ACTIVE UNTIL {block_end}",
+    ], skip_check=True)
+
     BLOCK_FILE.write_text(block_end + "\n")

@@ -28,7 +28,7 @@ def get_current_user() -> str:
     return user
 
 
-def run_cmd(command: SubprocessCommand, stdin_text: Optional[str] = None, skip_check = False) -> subprocess.CompletedProcess[str]:
+def run_cmd(command: SubprocessCommand, stdin_text: Optional[str] = None, skip_check = False, print_log = True) -> subprocess.CompletedProcess[str]:
     """
     Run a command without a shell.
     - command is argv (e.g. ["ls", "-l"]).
@@ -36,11 +36,11 @@ def run_cmd(command: SubprocessCommand, stdin_text: Optional[str] = None, skip_c
     Returns CompletedProcess with .stdout/.stderr as strings.
     """
     ### Debug
-    
-    if stdin_text is not None:
-        log('Running command:', shlex.join(command), f"< {stdin_text}")
-    else:
-        log('Running command:', shlex.join(command))
+    if print_log:
+        if stdin_text is not None:
+            log('Running command:', shlex.join(command), f"< {stdin_text}")
+        else:
+            log('Running command:', shlex.join(command))
     ### 
 
     proc = subprocess.run(
