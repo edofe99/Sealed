@@ -74,7 +74,7 @@ def schedule_run_cmd(command_to_schedule: SubprocessCommand, minutes: int) -> su
     # Create the at job AS ROOT so it will run as root
     schedule_cmd: SubprocessCommand = ["at", "now", "+", str(minutes), "minutes"]
 
-    log("Command has been scheduled for:",(datetime.now() + timedelta(minutes=minutes)).isoformat(timespec="seconds"))
+    log("The following command has been scheduled for:",(datetime.now() + timedelta(minutes=minutes)).isoformat(timespec="seconds"))
 
     return run_cmd(schedule_cmd, stdin_text=job_script)
 

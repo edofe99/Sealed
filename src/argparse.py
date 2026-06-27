@@ -170,4 +170,3 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         add_file_folder(args.add_file_folder, args.no_exec)
         return 0
 
-

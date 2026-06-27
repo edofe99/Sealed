@@ -2,8 +2,8 @@ from typing import Iterable, Union
 from datetime import datetime, timedelta
 
 import src.utils as utils
-# from src.website_blocker import leechblock
-from src.defaults import BLOCK_FILE, ExceptionType
+import src.leechblock as leechblock
+from src.defaults import BLOCK_FILE, ExceptionType, POLICIES_FILE
 from src.block_file_folder import block_file_folder
 
 def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
@@ -18,6 +18,7 @@ def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, 
     # -------------------------- Allow certain commands -------------------------- #
 
     if exceptions:
+        # we give to exceptions an higher priority otherwise they would be overwritten by sealed-deny-root
         utils.add_sudoers_permission(user = user, priority = 90 , filename = 'sealed-extra-exceptions', exceptions = exceptions, schedule_removal = minutes)
 
 
@@ -36,17 +37,26 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
     user = utils.startup_checks()
     
     if exclude_user_from_root:
+        utils.log('Removing user from sudo group')
         _block_user_access_to_root(user, minutes, exceptions)
 
     if block_root:
+        utils.log('Blocking root access using a password')
         _block_root_access(minutes)
     
-    # if leechblock_blocker:
-    #     leechblock.check_policy()
+    # We block the removal of leechblock website blocker, so you can start a website block and not be able to stop it
+    if leechblock_blocker:
+        utils.log('Installing Firefox Leechblock policy')
+        leechblock.check_policy()
+        # Schedule the removal of the leechblock policies
+        # this is commented because otwewise you would need to restart firefox at every new run
+        # for me it's ok to always have leechblock uninstallable
+        # utils.schedule_run_cmd(["rm", "-f", "--", str(POLICIES_FILE)], minutes)
 
     if block_file_folders:
         utils.log('Blocking file folders')
         block_file_folder(schedule_restore=minutes)
 
-
-    BLOCK_FILE.write_text((datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M") + "\n")
+    block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
+    utils.log(f'BLOCK ACTIVE UNTIL {block_end}')
+    BLOCK_FILE.write_text(block_end + "\n")

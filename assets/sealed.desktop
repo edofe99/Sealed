@@ -1,6 +1,0 @@
-[Desktop Entry]
-Name=Sealed
-Exec=sh -c 'export DISPLAY=${DISPLAY:-:0}; xhost +SI:localuser:root >/dev/null && sudo --preserve-env=DISPLAY,XAUTHORITY /usr/local/bin/sealed/sealed; xhost -SI:localuser:root >/dev/null'
-Type=Application
-Terminal=false
-Icon=/usr/local/bin/sealed/sealed.png
