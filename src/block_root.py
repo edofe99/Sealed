@@ -35,7 +35,7 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
 
     # ------------------------------ Initial checks ------------------------------ #
     user = utils.startup_checks()
-    
+
     if exclude_user_from_root:
         utils.log('Removing user from sudo group')
         _block_user_access_to_root(user, minutes, exceptions)
@@ -43,7 +43,7 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
     if block_root:
         utils.log('Blocking root access using a password')
         _block_root_access(minutes)
-    
+
     # We block the removal of leechblock website blocker, so you can start a website block and not be able to stop it
     if leechblock_blocker:
         utils.log('Installing Firefox Leechblock policy')
@@ -59,7 +59,10 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
 
     block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
     utils.log(f'BLOCK ACTIVE UNTIL {block_end}')
-    
+    BLOCK_FILE.write_text(block_end + "\n")
+
+
+    # ------------------------------- NOTIFICATIONS ------------------------------ #
     import os
     import pwd
 
@@ -81,4 +84,17 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
         f"BLOCK ACTIVE UNTIL {block_end}",
     ], skip_check=True)
 
-    BLOCK_FILE.write_text(block_end + "\n")
+    utils.schedule_run_cmd([
+        "runuser", "-u", user, "--",
+        "env",
+        f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
+        f"XDG_RUNTIME_DIR=/run/user/{uid}",
+        "notify-send",
+        "--urgency=normal",
+        "--app-name=Sealed",
+        "--expire-time=10000",
+        "--transient",
+        "Sealed",
+        "BLOCK ENDED",
+    ], minutes)
+
