@@ -1,15 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-#TODO, use a better structure:
-# /usr/local/bin/sealed              # public command symlink or wrapper
-# /usr/local/lib/sealed/             # installed code: sealed, restore, src/, .venv/
-# /var/lib/sealed/                   # persistent state/config
-#   file_folders.json
-#   permissions_backup/
-#   block.txt
-
-
 # Re-run as root if needed
 if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
   exec sudo -- "$0" "$@"
