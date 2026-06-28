@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.2 - 2026-02-06
+
+### Added
+
+- Now blocking the execution of a binary will also kill the process when a block is started.
+- Now you can block the execution of a binary when already inside a block (and the process will also be killed), even if it was already added to the list of files to be blocked but without the "--block-exec" flag. I.e. you can do:
+  ```
+  sudo sealed --add-files-folders /usr/bin/steam
+  sudo sealed --add-files-folders /usr/bin/steam --block-exec
+  ```
+  in case you forgot the `--block-exec` on the first run of the command.
+
 ## 3.1 - 2026-02-06
 
 ### Fixed
