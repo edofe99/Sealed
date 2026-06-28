@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 
-from src.utils import run_cmd, schedule_run_cmd, log, is_block_active
+from src.utils import run_cmd, schedule_run_cmd, log, is_block_active, get_current_user
 from src.defaults import PERMISSIONS_BACKUP_DIR, FILE_FOLDERS_TO_BLOCK, RESTORE_SCRIPT
 
 def _make_file_non_executable(file_folder):
@@ -34,10 +34,18 @@ def _make_file_non_executable(file_folder):
         run_cmd(["chmod", "700", str(file_folder)])
 
 
-def _make_file_folder_immutable(file_folder):
-    # With this we need to skip_check because sometimes chattr can't make sub-file/folders immutable
+def _make_file_folder_immutable(file_folder, revert: bool = False):
+    # With skip_check because chattr can fail on some nested files/folders,
     # like with .venv, so we just continue without halting the code because of those
-    run_cmd(["chattr","-R","+i",str(file_folder)], skip_check = True)
+    # the revert flag makes the file back to be mutable
+    flag = "-i" if revert else "+i"
+    run_cmd(["chattr", "-R", flag, str(file_folder)], skip_check=True)
+
+def _kill_exec(path_to_exec: str | Path):
+    user = get_current_user()
+    name = Path(path_to_exec).name
+    log(f'Killing {name}...')
+    run_cmd(["systemctl",f"--machine={user}@.host","--user","kill","--signal=KILL",f"app-*{name}*",], skip_check=True)
 
 
 def block_file_folder(file_folder_to_block: str | Path | None = None, block_execution: bool = False, schedule_restore : int = None) -> None:
@@ -53,6 +61,7 @@ def block_file_folder(file_folder_to_block: str | Path | None = None, block_exec
       - block_execution (bool)
     """
     # For safety we first schedule file restore, so if any error during blocking file we are able to still restore
+    # This will restore EVERYTHING, so safe to run even during a block session
     if schedule_restore:
         schedule_run_cmd([str(RESTORE_SCRIPT)],minutes=schedule_restore)
 
@@ -108,6 +117,8 @@ def block_file_folder(file_folder_to_block: str | Path | None = None, block_exec
 
         # First we change permissions (optional)
         if exec_block:
+            # Kill the running program and then make it non-executable again
+            _kill_exec(p)
             _make_file_non_executable(p)
         
         # Then we make immutable
@@ -153,7 +164,24 @@ def add_file_folder(file_folder: Path, block_execution: bool = False) -> None:
 
     # ---- prevent duplicates ----
     for existing in data:
-        if isinstance(existing, dict) and existing.get("path") == entry["path"]:
+        already_exist = isinstance(existing, dict) and existing.get("path") == entry["path"]
+
+        # If there is already a path to be blocked but we want to make it immutable
+        if already_exist and block_execution and not existing.get("block_execution"):
+            if is_block_active():
+                # Make it back immutable
+                _make_file_folder_immutable(p, revert=True)
+                # Kill it
+                _kill_exec(p)
+                # Make it non-executable
+                _make_file_non_executable(p)
+                # Make it immutable again
+                _make_file_folder_immutable(p)
+
+            existing["block_execution"] = True
+            return
+
+        if already_exist:
             log(f"[INFO] Path already present in config: {p}")
             return
 

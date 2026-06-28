@@ -58,7 +58,6 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
         block_file_folder(schedule_restore=minutes)
 
     block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
-    utils.log(f'BLOCK ACTIVE UNTIL {block_end}')
     BLOCK_FILE.write_text(block_end + "\n")
 
 
@@ -98,3 +97,4 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
         "BLOCK ENDED",
     ], minutes)
 
+    utils.log(f'BLOCK ACTIVE UNTIL {block_end}')

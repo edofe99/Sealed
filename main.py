@@ -5,7 +5,7 @@ import sys
 import os
 
 
-from src.argparse import run
+from src.run import run
 
 # Check if the script is being run with superuser privileges
 if os.geteuid() != 0:

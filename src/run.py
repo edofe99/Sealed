@@ -87,6 +87,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
 
     args = p.parse_args(argv)
+    argv = sys.argv[1:] if argv is None else list(argv)
 
     # ---------------------------------------------------------------------------- #
     #                                  ARGS CHECKS                                 #
@@ -94,28 +95,36 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     
     # --check-sudoers alone
     if args.check_sudoers:
-        if args.block is not None or args.exception or args.remaining or args.block_files_folders or args.add_file_folder or args.no_exec:
+        if len(argv) != 1:
             p.error("--check-sudoers can only be run alone")
+
         return args
 
     # --remaining alone
     if args.remaining:
-        if args.block is not None or args.exception or args.block_files_folders or args.add_file_folder or args.no_exec:
+        if len(argv) != 1:
             p.error("--remaining can only be run alone")
-        return args
 
-    # --no-exec requires --add-file-folder
-    if args.no_exec and args.add_file_folder is None:
-        p.error("--no-exec can't be run alone (requires --add-file-folder)")
+        return args
 
     # --add-file-folder mode (only allowed with optional --no-exec)
     if args.add_file_folder is not None:
-        if args.block is not None or args.exception or args.block_files_folders:
+        allowed = {"--add-file-folder", "--no-exec"}
+        used_flags = [arg for arg in argv if arg.startswith("--")]
+
+        if any(flag not in allowed for flag in used_flags):
             p.error("--add-file-folder can only be used with optional --no-exec (no other flags)")
+        
+        # Ensure the given path is absolute
         args.add_file_folder = args.add_file_folder.expanduser().resolve()
         if not args.add_file_folder.is_absolute():
             p.error(f"--add-file-folder must be an absolute path: {args.add_file_folder}")
+
         return args
+
+    # --no-exec requires to be run with --add-file-folder
+    if args.no_exec and args.add_file_folder is None:
+        p.error("--no-exec can't be run alone (requires --add-file-folder)")
 
     # --exception requires --block
     if args.exception and args.block is None:
