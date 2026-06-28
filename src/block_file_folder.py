@@ -117,6 +117,8 @@ def block_file_folder(file_folder_to_block: str | Path | None = None, block_exec
 
         # First we change permissions (optional)
         if exec_block:
+            # If this was already made immutable, make it back to be mutable so that we can turn on the execution block
+            _make_file_folder_immutable(p, revert=True)
             # Kill the running program and then make it non-executable again
             _kill_exec(p)
             _make_file_non_executable(p)
@@ -168,18 +170,9 @@ def add_file_folder(file_folder: Path, block_execution: bool = False) -> None:
 
         # If there is already a path to be blocked but we want to make it immutable
         if already_exist and block_execution and not existing.get("block_execution"):
-            if is_block_active():
-                # Make it back immutable
-                _make_file_folder_immutable(p, revert=True)
-                # Kill it
-                _kill_exec(p)
-                # Make it non-executable
-                _make_file_non_executable(p)
-                # Make it immutable again
-                _make_file_folder_immutable(p)
-
             existing["block_execution"] = True
-            return
+            data.remove(existing)
+            continue
 
         if already_exist:
             log(f"[INFO] Path already present in config: {p}")
