@@ -7,17 +7,24 @@ if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
 fi
 
 SRC_MAIN="./main.py"
-SRC_RESTORE="./restore.py"
-SRC_APP_DIR="./src"
 DEST_DIR="/usr/local/bin/sealed_src"
 DEST_APP="${DEST_DIR}/sealed"
-DEST_RESTORE="${DEST_DIR}/restore"
+
+SRC_APP_DIR="./src"
+
+SRC_GUI="./src/gui/gui.py"
+DEST_GUI="${DEST_DIR}/sealed-gui"
+
 VENV_DIR="${DEST_DIR}/.venv"
+
+SRC_POLICY="./assets/com.sealed.gui.policy"
+POLKIT_ACTIONS_DIR="/usr/share/polkit-1/actions"
 
 # Before starting installation, check that in current folder we have all the files we need
 [[ -f "$SRC_MAIN" ]] || { echo "Error: $SRC_MAIN not found."; exit 1; }
-[[ -f "$SRC_RESTORE" ]] || { echo "Error: $SRC_RESTORE not found."; exit 1; }
+# [[ -f "$SRC_RESTORE" ]] || { echo "Error: $SRC_RESTORE not found."; exit 1; }
 [[ -d "$SRC_APP_DIR" ]] || { echo "Error: $SRC_APP_DIR directory not found."; exit 1; }
+[[ -f "$SRC_POLICY" ]] || { echo "Error: $SRC_POLICY not found."; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo "Error: python3 not found in PATH."; exit 1; }
 
 echo "Installing Sealed..."
@@ -35,29 +42,43 @@ cp -r "$SRC_APP_DIR" "${DEST_DIR}"
 # we save it as that because it's easier for sudoers file and "at" command just calling "sealed" instead of python sealed.py
 echo "Installing scripts"
 cp "$SRC_MAIN" "$DEST_APP"
-cp "$SRC_RESTORE" "$DEST_RESTORE"
+# cp "$SRC_RESTORE" "$DEST_RESTORE"
+if [[ -f "$SRC_GUI" ]]; then
+  cp "$SRC_GUI" "$DEST_GUI"
+fi
 
 echo "Ensuring permissions"
 # Make the "sealed" and "restore" files executable
 chmod +x "$DEST_APP"
-chmod +x "$DEST_RESTORE"
+# chmod +x "$DEST_RESTORE"
+if [[ -f "$DEST_GUI" ]]; then
+  chmod +x "$DEST_GUI"
+fi
 
 echo "Creating virtual environment"
 # Create virtual environment if missing (this could be omitted, but better if we will use libraries)
 rm -rf -- "$VENV_DIR"
 if [[ ! -d "$VENV_DIR" ]]; then
   python3 -m venv "$VENV_DIR"
+  $VENV_DIR/bin/python -m pip install --upgrade pip
+  $VENV_DIR/bin/python -m pip install PySide6
 fi
 
 echo "Creating launcher shortcut"
 # Make a symlink so we can execute it by simply typing "sealed --block" instead of doing "usr/local/bin/..."
 ln -sf "$DEST_APP" /usr/local/bin/sealed
+if [[ -f "$DEST_GUI" ]]; then
+  ln -sf "$DEST_GUI" /usr/local/bin/sealed-gui
+fi
+
+echo "Installing Polkit action"
+install -D -m 0644 "$SRC_POLICY" "${POLKIT_ACTIONS_DIR}/com.sealed.gui.policy"
 
 echo "First run of Sealed, checking permissions..."
 "$DEST_APP" --check-sudoers
 
 echo "✅ Installation complete:
 - App:                $DEST_APP
-- Restore script:     $DEST_RESTORE
+- GUI:                $DEST_GUI
 - Venv:               $VENV_DIR
 - Modules:            ${DEST_DIR}/src"

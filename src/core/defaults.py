@@ -3,7 +3,7 @@ from typing import Sequence, Union, Tuple
 
 SEALED_DIR = Path("/usr/local/bin/sealed_src")
 SEALED_BIN = Path("/usr/local/bin/sealed")
-RESTORE_SCRIPT = SEALED_DIR / 'restore'
+RESTORE_SCRIPT = SEALED_DIR / 'src/core/restore_file_folder.py'
 # SEALED_BIN = SEALED_DIR / "sealed"
 BLOCK_FILE = SEALED_DIR / "block.txt"
 FILE_FOLDERS_TO_BLOCK = SEALED_DIR / "file_folders.json"

@@ -1,10 +1,10 @@
 from typing import Iterable, Union
 from datetime import datetime, timedelta
 
-import src.utils as utils
-import src.leechblock as leechblock
-from src.defaults import BLOCK_FILE, ExceptionType
-from src.block_file_folder import block_file_folder
+import src.core.utils as utils
+import src.website_blocker.leechblock as leechblock
+from src.core.defaults import BLOCK_FILE, ExceptionType
+from src.core.block_file_folder import block_file_folder
 
 def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
     '''
@@ -23,12 +23,10 @@ def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, 
 
 
 def _block_root_access(minutes: int) -> None:
-    # These require root -> run via sudo
-    block_root_cmd: utils.SubprocessCommand = ["passwd", "-l", "root"]
-    restore_root_cmd: utils.SubprocessCommand = ["passwd", "-u", "root"]  # will run as root because we scheduled via sudo at
-
-    utils.schedule_run_cmd(restore_root_cmd, minutes)
-    utils.run_cmd(block_root_cmd)
+    # First we schedule enabling root access with password
+    utils.schedule_run_cmd(["passwd", "-u", "root"], minutes)
+    # Then we remove root access with passowrd
+    utils.run_cmd(["passwd", "-l", "root"])
 
 
 def system_block(block_root = True, exclude_user_from_root = True, minutes = 60, leechblock_blocker = True, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None, block_file_folders : bool = False):

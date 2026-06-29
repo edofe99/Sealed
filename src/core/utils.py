@@ -6,7 +6,7 @@ from typing import Optional, Iterable, Union, List
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from src.defaults import SubprocessCommand, ExceptionType, DEFAULT_EXCEPTIONS, BLOCK_FILE
+from src.core.defaults import SubprocessCommand, ExceptionType, DEFAULT_EXCEPTIONS, BLOCK_FILE
 
 
 def log(*message : str):

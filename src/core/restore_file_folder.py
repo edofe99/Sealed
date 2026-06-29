@@ -1,15 +1,19 @@
 #!/usr/local/bin/sealed_src/.venv/bin/python
-from __future__ import annotations
-import json
+import sys
 from pathlib import Path
-from typing import Any
-import argparse
 
-from src.defaults import FILE_FOLDERS_TO_BLOCK, PERMISSIONS_BACKUP_DIR
-from src.utils import run_cmd, log
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from typing import Any  # noqa: E402
+import argparse  # noqa: E402
+import json  # noqa: E402
+
+from src.core.defaults import FILE_FOLDERS_TO_BLOCK, PERMISSIONS_BACKUP_DIR  # noqa: E402
+from src.core.utils import run_cmd, log  # noqa: E402
 
 
-def remove_immutability() -> None:
+def _remove_immutability() -> None:
     if not FILE_FOLDERS_TO_BLOCK.is_file():
         raise RuntimeError(f"Config file not found: {FILE_FOLDERS_TO_BLOCK}")
 
@@ -39,7 +43,7 @@ def remove_immutability() -> None:
             log(f"[WARN] Skipping entry #{i}: {e}")
             continue
 
-def restore_acl_backups() -> None:
+def _restore_acl_backups() -> None:
 
     if not PERMISSIONS_BACKUP_DIR.is_dir():
         # No backup permission folder -> no permissions to restore
@@ -86,14 +90,14 @@ def main() -> None:
         p.error("At least one of --restore-immutability or --restore-permissions must be specified")
 
     if args.restore_immutability:
-        remove_immutability()
+        _remove_immutability()
 
     if args.restore_permissions:
-        restore_acl_backups()
+        _restore_acl_backups()
 
 
 if __name__ == "__main__":
     # First we restore immutability
-    remove_immutability()
+    _remove_immutability()
     # Then we restore permissions
-    restore_acl_backups()
+    _restore_acl_backups()

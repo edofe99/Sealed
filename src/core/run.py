@@ -3,10 +3,10 @@ import sys
 from pathlib import Path
 from typing import Optional, Sequence, Union, Iterable
 
-from src.block_root import system_block
-from src.defaults import BLOCK_FILE, ExceptionType
-from src.utils import startup_checks, format_exceptions_args, log, is_block_active
-from src.block_file_folder import add_file_folder
+from src.core.block_root import system_block
+from src.core.defaults import BLOCK_FILE, ExceptionType
+from src.core.utils import startup_checks, format_exceptions_args, log, is_block_active
+from src.core.block_file_folder import add_file_folder
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 

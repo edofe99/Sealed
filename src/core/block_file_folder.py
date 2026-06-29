@@ -4,8 +4,8 @@ import json
 from typing import Any
 
 
-from src.utils import run_cmd, schedule_run_cmd, log, is_block_active, get_current_user
-from src.defaults import PERMISSIONS_BACKUP_DIR, FILE_FOLDERS_TO_BLOCK, RESTORE_SCRIPT
+from src.core.utils import run_cmd, schedule_run_cmd, log, is_block_active, get_current_user
+from src.core.defaults import PERMISSIONS_BACKUP_DIR, FILE_FOLDERS_TO_BLOCK, RESTORE_SCRIPT
 
 def _make_file_non_executable(file_folder):
     '''
