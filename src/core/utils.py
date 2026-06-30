@@ -1,4 +1,5 @@
 import os
+import pwd
 import shlex
 import subprocess
 import shutil
@@ -16,11 +17,19 @@ def log(*message : str):
 
 def get_current_user() -> str:
 
-    user = (
-        os.environ.get("SUDO_USER")
-        or os.environ.get("USER")
-        or os.environ.get("LOGNAME")
-    )
+    user = os.environ.get("SUDO_USER")
+    if user and user != "root":
+        return user
+
+    # This part is needed for the GUI app root instance to be able to determine the user 
+    pkexec_uid = os.environ.get("PKEXEC_UID")
+    if pkexec_uid:
+        try:
+            return pwd.getpwuid(int(pkexec_uid)).pw_name
+        except (KeyError, ValueError):
+            pass
+
+    user = os.environ.get("USER") or os.environ.get("LOGNAME")
 
     if not user or user == "root":
         raise RuntimeError("Unable to determine invoking non-root user")

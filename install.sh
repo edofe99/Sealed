@@ -13,7 +13,7 @@ DEST_APP="${DEST_DIR}/sealed"
 SRC_APP_DIR="./src"
 
 SRC_GUI="./src/gui/gui.py"
-DEST_GUI="${DEST_DIR}/sealed-gui"
+DEST_GUI="${DEST_DIR}/sealed-qt"
 
 VENV_DIR="${DEST_DIR}/.venv"
 
@@ -68,7 +68,7 @@ echo "Creating launcher shortcut"
 # Make a symlink so we can execute it by simply typing "sealed --block" instead of doing "usr/local/bin/..."
 ln -sf "$DEST_APP" /usr/local/bin/sealed
 if [[ -f "$DEST_GUI" ]]; then
-  ln -sf "$DEST_GUI" /usr/local/bin/sealed-gui
+  ln -sf "$DEST_GUI" /usr/local/bin/sealed-qt
 fi
 
 echo "Installing Polkit action"
