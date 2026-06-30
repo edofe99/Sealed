@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Sealed
+GenericName=Block Session Manager
+Comment=Start and manage Sealed block sessions
+Exec=/usr/local/bin/sealed-qt
+TryExec=/usr/local/bin/sealed-qt
+Icon=/usr/share/icons/hicolor/512x512/apps/sealed.png
+Terminal=false
+Categories=Utility;Qt;
+Keywords=block;focus;lock;productivity;
+StartupNotify=true

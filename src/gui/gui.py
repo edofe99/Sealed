@@ -1,9 +1,10 @@
 #!/usr/local/bin/sealed_src/.venv/bin/python 
 from datetime import datetime, timedelta
 import json
+from pathlib import Path
 import sys
 from PySide6.QtCore import QCoreApplication, Qt, QTimer
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -29,10 +30,27 @@ QCoreApplication.setOrganizationName("Sealed")
 QGuiApplication.setDesktopFileName("sealed")
 
 SETTINGS_FILE = SEALED_DIR / "settings.json"
+APP_ICON_PATHS = (
+    SEALED_DIR / "assets" / "sealed.png",
+    Path(__file__).resolve().parents[2] / "assets" / "sealed.png",
+    Path("/usr/share/icons/hicolor/512x512/apps/sealed.png"),
+)
 DEFAULT_SETTINGS = {
     "block_files_folders": False,
     "leechblock_policy": True,
 }
+
+
+def app_icon() -> QIcon:
+    themed_icon = QIcon.fromTheme("sealed")
+    if not themed_icon.isNull():
+        return themed_icon
+
+    for icon_path in APP_ICON_PATHS:
+        if icon_path.is_file():
+            return QIcon(str(icon_path))
+
+    return QIcon()
 
 
 def load_settings() -> dict[str, bool]:
@@ -62,6 +80,9 @@ def main() -> int:
     ensure_running_as_root()
 
     app = QApplication(sys.argv)
+    icon = app_icon()
+    if not icon.isNull():
+        app.setWindowIcon(icon)
 
     try:
         startup_checks()
@@ -71,6 +92,8 @@ def main() -> int:
 
     window = QMainWindow()
     window.setWindowTitle("Sealed")
+    if not icon.isNull():
+        window.setWindowIcon(icon)
 
     tabs = QTabWidget()
 
