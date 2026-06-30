@@ -7,7 +7,14 @@ from typing import Optional, Iterable, Union, List
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from src.core.defaults import SubprocessCommand, ExceptionType, DEFAULT_EXCEPTIONS, BLOCK_FILE
+from src.core.defaults import (
+    SubprocessCommand,
+    ExceptionType,
+    DEFAULT_EXCEPTIONS,
+    BLOCK_FILE,
+    SEALED_DIR,
+    SEALED_BIN,
+)
 
 
 def log(*message : str):
@@ -100,7 +107,6 @@ def add_sudoers_permission(user : str, priority : str, filename : str, exception
 
     sudoers_permissions_filename = f"{priority}-{user}-{filename}"
     sudoers_permissions_filepath = str(Path("/etc/sudoers.d") / sudoers_permissions_filename)
-
 
     lines: list[str] = []
     if exceptions:
@@ -230,6 +236,31 @@ def is_block_active():
         elif file_time > now:
             return True
         
-    except FileNotFoundError, ValueError:
+    except (FileNotFoundError, ValueError):
         # log("Block file not found")
         return False
+
+def uninstall():
+    log('Starting Sealed uninstall')
+    # This function will delete EVERYTHING
+    if os.geteuid() != 0:
+        raise PermissionError("You must run this script as root (e.g., with sudo).")
+
+    sudoers_dir = Path("/etc/sudoers.d")
+    if sudoers_dir.is_dir():
+        for sudoers_file in sudoers_dir.iterdir():
+            if sudoers_file.is_file() and "sealed" in sudoers_file.name.lower():
+                run_cmd(["rm", "-rf", "--", str(sudoers_file)])
+
+    for path in (
+        SEALED_DIR,
+        SEALED_BIN,
+        Path("/usr/local/bin/sealed-qt"),
+        Path("/usr/share/applications/sealed.desktop"),
+        Path("/usr/share/icons/hicolor/512x512/apps/sealed.png"),
+        Path("/usr/share/polkit-1/actions/com.sealed.gui.policy"),
+    ):
+        run_cmd(["rm", "-rf", "--", str(path)])
+    
+    log('Sealed has been completely uninstalled, no leftovers files.')
+    raise RuntimeError("Sealed has been uninstalled.")

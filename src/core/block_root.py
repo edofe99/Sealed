@@ -1,10 +1,10 @@
 from typing import Iterable, Union
 from datetime import datetime, timedelta
 
+from src.core.block_file_folder import block_file_folder
+from src.core.defaults import BLOCK_FILE, ICON_PATH, ExceptionType
 import src.core.utils as utils
 import src.website_blocker.leechblock as leechblock
-from src.core.defaults import BLOCK_FILE, ExceptionType
-from src.core.block_file_folder import block_file_folder
 
 def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
     '''
@@ -75,6 +75,7 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
         "notify-send",
         "--urgency=normal",
         "--app-name=Sealed",
+        f"--icon={ICON_PATH}",
         "--expire-time=10000",
         "--transient",
         "Sealed",
@@ -89,6 +90,7 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
         "notify-send",
         "--urgency=normal",
         "--app-name=Sealed",
+        f"--icon={ICON_PATH}",
         "--expire-time=10000",
         "--transient",
         "Sealed",

@@ -3,6 +3,7 @@ from typing import Sequence, Union, Tuple
 
 SEALED_DIR = Path("/usr/local/bin/sealed_src")
 SEALED_BIN = Path("/usr/local/bin/sealed")
+ICON_PATH = SEALED_DIR / "assets" / "sealed.png"
 RESTORE_SCRIPT = SEALED_DIR / 'src/core/restore_file_folder.py'
 # SEALED_BIN = SEALED_DIR / "sealed"
 BLOCK_FILE = SEALED_DIR / "block.txt"

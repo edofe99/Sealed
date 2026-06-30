@@ -5,7 +5,7 @@ from typing import Optional, Sequence, Union, Iterable
 
 from src.core.block_root import system_block
 from src.core.defaults import BLOCK_FILE, ExceptionType
-from src.core.utils import startup_checks, format_exceptions_args, log, is_block_active
+from src.core.utils import startup_checks, format_exceptions_args, log, is_block_active, uninstall
 from src.core.block_file_folder import add_file_folder
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
@@ -85,6 +85,13 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="When used with --add-file-folder, makes the file owned by root and non-executable during the block.",
     )
+    
+    # --------------------------------- UNINSTALL -------------------------------- #
+    p.add_argument(
+        "--uninstall",
+        action="store_true",
+        help="Completely uninstall Sealed, leaving nothing behind.",
+    )
 
     args = p.parse_args(argv)
     argv = sys.argv[1:] if argv is None else list(argv)
@@ -97,6 +104,16 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     if args.check_sudoers:
         if len(argv) != 1:
             p.error("--check-sudoers can only be run alone")
+
+        return args
+    
+    # --uninstall alone
+    if args.uninstall:
+        if len(argv) != 1:
+            p.error("--uninstall can only be run alone")
+        
+        if is_block_active():
+            raise RuntimeError("You can't do this inside a Sealed session.")
 
         return args
 
@@ -154,7 +171,10 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         user = startup_checks()
         log(f'Sudoers permissions set for {user}')
         return 0
-
+    
+    if args.uninstall:
+        uninstall()
+        
     if args.remaining:
         try:
             print(BLOCK_FILE.read_text(encoding="utf-8"), end="")

@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.0 - 2026-06-30
+
+### Added
+
+- Implemented a GUI, now you can run Sealed directly from your favorite application launcher.
+  It's pretty minimalistic, since I've never create a GUI app, but I think it's a good wrapper for the terminal commands.
+  ![alt text](images/image.png)
+  ![alt text](images/image-1.png)
+  
+- Added `--uninstall` command, this will wipe every file related to Sealed
+
+
 ## 3.2 - 2026-06-28
 
 ### Added

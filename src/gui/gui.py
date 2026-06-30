@@ -24,6 +24,7 @@ from src.core.defaults import BLOCK_FILE, SEALED_DIR
 from src.core.utils import is_block_active, startup_checks
 from src.gui.check_root import ensure_running_as_root
 from src.gui.file_folders_tab import FileFoldersTab
+from src.gui.settings_tab import SettingsTab
 
 QCoreApplication.setApplicationName("Sealed")
 QCoreApplication.setOrganizationName("Sealed")
@@ -55,21 +56,10 @@ def app_icon() -> QIcon:
 
 def load_settings() -> dict[str, bool]:
     try:
-        settings = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        # start with DEFAULT_SETTINGS, then overwrite with values from loaded_settings
+        return DEFAULT_SETTINGS | json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return DEFAULT_SETTINGS.copy()
-
-    return {
-        "block_files_folders": bool(
-            settings.get(
-                "block_files_folders",
-                DEFAULT_SETTINGS["block_files_folders"],
-            )
-        ),
-        "leechblock_policy": bool(
-            settings.get("leechblock_policy", DEFAULT_SETTINGS["leechblock_policy"])
-        ),
-    }
 
 
 def save_settings(settings: dict[str, bool]) -> None:
@@ -199,6 +189,7 @@ def main() -> int:
 
     tabs.addTab(sealed_block_tab, "Sealed Block")
     tabs.addTab(FileFoldersTab(), "Files and Folders")
+    tabs.addTab(SettingsTab(), "Settings")
 
     window.setCentralWidget(tabs)
     window.resize(650, 420)

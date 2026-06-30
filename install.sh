@@ -88,12 +88,6 @@ install -D -m 0644 "$SRC_POLICY" "${POLKIT_ACTIONS_DIR}/com.sealed.gui.policy"
 echo "Installing desktop launcher"
 install -D -m 0644 "$SRC_ICON" "${ICON_DEST_DIR}/sealed.png"
 install -D -m 0644 "$SRC_DESKTOP" "${DESKTOP_APPLICATIONS_DIR}/sealed.desktop"
-if command -v gtk-update-icon-cache >/dev/null 2>&1; then
-  gtk-update-icon-cache -f -q /usr/share/icons/hicolor || true
-fi
-if command -v update-desktop-database >/dev/null 2>&1; then
-  update-desktop-database "$DESKTOP_APPLICATIONS_DIR" || true
-fi
 
 echo "First run of Sealed, checking permissions..."
 "$DEST_APP" --check-sudoers
