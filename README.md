@@ -33,7 +33,8 @@ Or from the GUI interface, go to settings tab and press "Uninstall". Of course y
 You can use Sealed either by terminal commands or with a GUI. Here are a couple of commands explanations:
 - `--block <minutes>` (this is the Start Block button on the GUI): this will prevent the user to have root access (i.e. you can't install apps, or modify anything on your system)
 - `--block <minutes> --exception /usr/bin/pacman -Syu` (not yet implemented on GUI): this will block root access but you'll be able to run `sudo pacman -Syu`, you can repeat `--exception <path-to-command> <parameter>` as many times as you want. (This feature will be better in the future)
-- `--block-file-folder`, on the GUI just go to Files and Folders tab and click on Add button: during a block all listed files and folders will be read-only, you will not be able to modify them. You can also import path to a binary, like `/usr/bin/steam` with the `--no-exec` flag (checkbox ticked on the GUI) and this will make impossible to launch Steam during a block session.
+- `--block <minutes> --block-files-folders` (same as ticking "Block Files & Folders" in the GUI): this will start a block and all files and folders listed to be blocked (on `/usr/local/bin/sealed_src/files_folders.json`, or on the GUI Files & Folders tab) will be made read only, and also execution of listed binaries will be blocked if the `--no-exec` flag is active.
+- `--add-file-folder`, on the GUI just go to Files and Folders tab and click on Add button: during a block all listed files and folders will be read-only, you will not be able to modify them. You can also import path to a binary, like `/usr/bin/steam` with the `--no-exec` flag (checkbox ticked on the GUI) and this will make impossible to launch Steam during a block session.
 
 The `sudo sealed -h` command will give you explanations about any commands.
 
