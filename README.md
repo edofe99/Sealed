@@ -7,7 +7,7 @@ The strictest distraction blocker for Linux.
 
 ## Installation
 
-Sealed is supported on every Linux machine that is using Python, systemd and sudo (if you don't know what systemd or sudo is, then almost surely you have them on your distro). To install either clone this repo or download the latest release. 
+Sealed is supported on every Linux machine that is using `Python`, `at`, `systemd` and `sudo` (if you don't know what systemd or sudo is, then almost surely you have them on your distro). To install either clone this repo or download the latest release. 
 
 Here are the installation steps by cloning the repo:
 
@@ -46,7 +46,7 @@ The `sudo sealed -h` command will give you explanations about any commands.
 By default Sealed is running an exception for [TimeShift](https://github.com/linuxmint/timeshift), so even if you don't have `sudo` access you should be able to run it and restore the system to a point where Sealed block was not active. 
 
 In the case you don't use TimeShift (please consider doing backups of your system!) you will need to boot a live ISO of your distro, chroot into your system (please don't go on if you don't know what you're doing) and run these commands:
-- `passwd -u root`; this will allow to login again as root
+- `passwd -u root`: this will allow to login again as root
 - Then `ls /etc/sudoers.d` and delete every file inside this folder that contains the word `sealed` using `rm`.
 - Check if you have permissions to restore by doing `ls ls /usr/local/bin/sealed_src/permissions_backup`, if this folder exists and it has some files inside, then run: `/usr/local/bin/sealed_src/src/core/restore_file_folder.py`; otherwise ignore this step.
 
