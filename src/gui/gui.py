@@ -25,6 +25,7 @@ from src.core.utils import is_block_active, startup_checks
 from src.gui.check_root import ensure_running_as_root
 from src.gui.file_folders_tab import FileFoldersTab
 from src.gui.settings_tab import SettingsTab
+from src.gui.theme import apply_theme
 
 QCoreApplication.setApplicationName("Sealed")
 QCoreApplication.setOrganizationName("Sealed")
@@ -70,6 +71,7 @@ def main() -> int:
     ensure_running_as_root()
 
     app = QApplication(sys.argv)
+    apply_theme(app)
     icon = app_icon()
     if not icon.isNull():
         app.setWindowIcon(icon)
