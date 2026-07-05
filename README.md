@@ -48,7 +48,7 @@ By default Sealed is running an exception for [TimeShift](https://github.com/lin
 In the case you don't use TimeShift (please consider doing backups of your system!) you will need to boot a live ISO of your distro, chroot into your system (please don't go on if you don't know what you're doing) and run these commands:
 - `passwd -u root`: this will allow to login again as root
 - Then `ls /etc/sudoers.d` and delete every file inside this folder that contains the word `sealed` using `rm`.
-- Check if you have permissions to restore by doing `ls ls /usr/local/bin/sealed_src/permissions_backup`, if this folder exists and it has some files inside, then run: `/usr/local/bin/sealed_src/src/core/restore_file_folder.py`; otherwise ignore this step.
+- Check if you have permissions to restore by doing `ls /usr/local/bin/sealed_src/permissions_backup`, if this folder exists and it has some files inside, then run: `/usr/local/bin/sealed_src/src/core/restore_file_folder.py`; otherwise ignore this step.
 
 Now everything should be restored.
 

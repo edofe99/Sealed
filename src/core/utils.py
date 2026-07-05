@@ -6,6 +6,7 @@ import shutil
 from typing import Optional, Iterable, Union, List
 from pathlib import Path
 from datetime import datetime, timedelta
+import json
 
 from src.core.defaults import (
     SubprocessCommand,
@@ -21,6 +22,20 @@ def log(*message : str):
     date_prefix = f"[{(datetime.now()).isoformat(timespec='seconds')}]"
     print(date_prefix,*message)
 
+
+def load_json(path : str | Path) -> dict:
+    if not Path(path).is_file() and not Path(path).exists():
+        log(f'{path} does not exist, creating new file.')
+        return []
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Invalid JSON in {path}: {e}") from e
+
+    if not isinstance(data, list):
+        raise RuntimeError(f"Config must be a JSON list of entries, got {type(data).__name__}")
+
+    return data
 
 def get_current_user() -> str:
 

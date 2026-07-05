@@ -2,6 +2,7 @@ from typing import Iterable, Union
 from datetime import datetime, timedelta
 
 from src.core.block_file_folder import block_file_folder
+from src.core.block_apps import block_apps
 from src.core.defaults import BLOCK_FILE, ICON_PATH, ExceptionType
 import src.core.utils as utils
 import src.website_blocker.leechblock as leechblock
@@ -29,7 +30,13 @@ def _block_root_access(minutes: int) -> None:
     utils.run_cmd(["passwd", "-l", "root"])
 
 
-def system_block(block_root = True, exclude_user_from_root = True, minutes = 60, leechblock_blocker = True, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None, block_file_folders : bool = False):
+def system_block(block_root = True,
+                 exclude_user_from_root = True,
+                 minutes = 60,
+                 leechblock_blocker = True,
+                 exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None,
+                 block_file_folders : bool = False,
+                 block_applications : bool = False) -> None:
 
     # ------------------------------ Initial checks ------------------------------ #
     user = utils.startup_checks()
@@ -54,6 +61,10 @@ def system_block(block_root = True, exclude_user_from_root = True, minutes = 60,
     if block_file_folders:
         utils.log('Blocking file folders')
         block_file_folder(schedule_restore=minutes)
+    
+    if block_applications:
+        utils.log('Blocking apps')
+        block_apps(schedule_restore=minutes)
 
     block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
     BLOCK_FILE.write_text(block_end + "\n")

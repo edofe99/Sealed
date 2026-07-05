@@ -7,6 +7,7 @@ from src.core.block_root import system_block
 from src.core.defaults import BLOCK_FILE, ExceptionType
 from src.core.utils import startup_checks, format_exceptions_args, log, is_block_active, uninstall
 from src.core.block_file_folder import add_file_folder
+from src.core.block_apps import add_app
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
@@ -27,7 +28,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             "  sealed --remaining\n"
             "  sealed --check-sudoers\n"
             "  sealed --add-file-folder /abs/path/to/thing\n"
-            "  sealed --add-file-folder /abs/path/to/thing --no-exec\n"
+            "  sealed --add-app /usr/bin/firefox\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter,  # keeps newlines in description/epilog
         add_help=True,
@@ -86,6 +87,19 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         help="When used with --add-file-folder, makes the file owned by root and non-executable during the block.",
     )
     
+    # -------------------------------- APP BLOCKER ------------------------------- #
+    p.add_argument(
+        "--block-apps",
+        action="store_true",
+        help="Block apps specified in the list of apps to blockduring the next session.",
+    )
+
+    p.add_argument(
+        "--add-app",
+        metavar="PATH",
+        type=Path,
+        help="Add an absolute executable path to the list of apps to block. If this command is used during a block session, then the app will be killed and blocked until the end of the session.",
+    )
     # --------------------------------- UNINSTALL -------------------------------- #
     p.add_argument(
         "--uninstall",
@@ -121,7 +135,6 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     if args.remaining:
         if len(argv) != 1:
             p.error("--remaining can only be run alone")
-
         return args
 
     # --add-file-folder mode (only allowed with optional --no-exec)
@@ -150,6 +163,17 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     # --block-files-folders requires --block
     if args.block_files_folders and args.block is None:
         p.error("--block-files-folders requires --block")
+
+    # --block-apps requires --block
+    if args.block_apps and args.block is None:
+        p.error("--block-apps requires --block")
+
+    # --add-app alone
+    if args.add_app:
+        used_flags = [arg for arg in argv if arg.startswith("--")]
+        if len(used_flags) != 1:
+            p.error("--add-app can only be run alone")
+        return args
 
     # must have --block if we got here
     if args.block is None:
@@ -192,10 +216,13 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         exceptions = format_exceptions_args(args.exception)
 
     if args.block:
-        system_block(minutes=args.block,exceptions=exceptions,block_file_folders=args.block_files_folders)
+        system_block(minutes=args.block,exceptions=exceptions,block_file_folders=args.block_files_folders, block_applications=args.block_apps)
         return 0
 
     if args.add_file_folder:
         add_file_folder(args.add_file_folder, args.no_exec)
         return 0
-
+    
+    if args.add_app:
+        add_app(args.add_app)
+        return 0
