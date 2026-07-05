@@ -1,4 +1,5 @@
 import json
+import pwd
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,7 @@ from PySide6.QtWidgets import (
 
 from src.core.block_file_folder import add_file_folder
 from src.core.defaults import FILE_FOLDERS_TO_BLOCK
-from src.core.utils import is_block_active
+from src.core.utils import get_current_user, is_block_active
 
 
 ORIGINAL_PATH_ROLE = Qt.UserRole
@@ -416,17 +417,28 @@ class FileFoldersTab(QWidget):
         self.load_entries()
         self._write_entries()
 
+    def _get_initial_directory(self) -> str:
+        try:
+            user = get_current_user()
+            return pwd.getpwnam(user).pw_dir
+        except Exception:
+            return str(Path.home())
+
     def _add_file(self) -> None:
         selected_path, _selected_filter = QFileDialog.getOpenFileName(
             self,
             "Choose File",
-            "",
+            self._get_initial_directory(),
             "All files (*)",
         )
         self._add_selected_path(selected_path)
 
     def _add_folder(self) -> None:
-        selected_path = QFileDialog.getExistingDirectory(self, "Choose Folder")
+        selected_path = QFileDialog.getExistingDirectory(
+            self,
+            "Choose Folder",
+            self._get_initial_directory(),
+        )
         self._add_selected_path(selected_path)
 
     def _add_custom_path(self) -> None:
