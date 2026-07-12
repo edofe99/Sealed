@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.1 - 2026-07-12
+
+### Added
+
+- Now application blocking follows a completely separate logic than File/Folders.
+- Added a GUI section for application blocking.
+- Removed the File/Folder and Applications global toggle. Now on every block session all apps and folders marked for blocking will be blocked.
+
+### Fixes
+
+- Now file explorer picker starts in user Home.
+- Added a security check that prevents to block Sealed's executable.
+
 ## 4.0 - 2026-06-30
 
 ### Added

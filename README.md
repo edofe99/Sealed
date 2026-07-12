@@ -22,8 +22,6 @@ cd Sealed
 ./install.sh
 ```
 
-and you are done.
-
 ### Uninstall
 
 To wipe out everything that was created during Sealed installation, simply run:
