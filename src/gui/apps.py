@@ -32,6 +32,49 @@ from src.core.utils import get_current_user, is_block_active, load_json
 PENDING_CUSTOM_PATH_ROLE = Qt.UserRole
 
 
+def _executable_from_command(command_line: str) -> str | None:
+    """Return the program launched by a desktop-entry command line."""
+    try:
+        arguments = shlex.split(command_line)
+    except ValueError:
+        return None
+
+    if not arguments:
+        return None
+
+    if Path(arguments[0]).name != "env":
+        return arguments[0]
+
+    index = 1
+    while index < len(arguments):
+        argument = arguments[index]
+
+        if argument == "--":
+            index += 1
+            break
+        if argument in {"-u", "--unset", "-C", "--chdir"}:
+            index += 2
+            continue
+        if argument in {"-S", "--split-string"}:
+            if index + 1 >= len(arguments):
+                return None
+            split_arguments = shlex.split(arguments[index + 1])
+            arguments = arguments[:index] + split_arguments + arguments[index + 2:]
+            continue
+        if argument.startswith(("--unset=", "--chdir=")):
+            index += 1
+            continue
+        if argument.startswith("-") and argument != "-":
+            index += 1
+            continue
+        if "=" in argument and not argument.startswith("="):
+            index += 1
+            continue
+        break
+
+    return arguments[index] if index < len(arguments) else None
+
+
 def installed_applications() -> list[tuple[str, str, str, QIcon]]:
     try:
         home = Path(pwd.getpwnam(get_current_user()).pw_dir)
@@ -86,8 +129,12 @@ def installed_applications() -> list[tuple[str, str, str, QIcon]]:
                 continue
 
             try:
-                command = entry.get("TryExec") or shlex.split(entry["Exec"])[0]
-            except (KeyError, ValueError, IndexError):
+                command = _executable_from_command(
+                    entry.get("TryExec") or entry["Exec"]
+                )
+            except KeyError:
+                continue
+            if not command:
                 continue
 
             executable = (
