@@ -35,8 +35,8 @@ def system_block(block_root = True,
                  minutes = 60,
                  leechblock_blocker = True,
                  exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None,
-                 block_file_folders : bool = False,
-                 block_applications : bool = False) -> None:
+                 block_file_folders : bool = True,
+                 block_applications : bool = True) -> None:
 
     # ------------------------------ Initial checks ------------------------------ #
     user = utils.startup_checks()

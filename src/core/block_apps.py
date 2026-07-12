@@ -60,17 +60,39 @@ def block_apps(schedule_restore : int = None) -> None:
                 _kill_app(p)
                 _block_execution(p)
 
-def add_app(path_to_executable: str | Path) -> None:
+def is_sealed_executable(path: str | Path) -> bool:
+    '''
+    Check if a path is the Sealed executable
+    '''
+    try:
+        relative_path = Path(path).expanduser().resolve().relative_to("/usr/local/bin")
+    except ValueError:
+        return False
+
+    return any("sealed" in part.lower() for part in relative_path.parts)
+
+
+def add_app(
+    path_to_executable: str | Path,
+    app_name: str | None = None,
+    icon_path: str | Path | None = None,
+) -> None:
     p = Path(path_to_executable).expanduser().resolve()
+    if is_sealed_executable(p):
+        raise RuntimeError(f"Can't add Sealed executable to block list: {p}")
     if not p.exists():
-        raise RuntimeError(f"executable path does not exist: {p}")
+        raise RuntimeError(f"Executable path does not exist: {p}")
     if not p.is_file():
-        raise RuntimeError(f"executable path must be a file: {p}")
+        raise RuntimeError(f"Executable path must be a file: {p}")
 
     entry = {
         "path": str(p),
         "block": True,
     }
+    if app_name:
+        entry["name"] = app_name
+    if icon_path:
+        entry["icon"] = str(icon_path)
     
     _check_json_integrity()
     data = load_json(APPS_TO_BLOCK)
@@ -79,8 +101,12 @@ def add_app(path_to_executable: str | Path) -> None:
     for existing in data:
         # If path already exist, skip
         if isinstance(existing, dict) and existing.get("path") == entry["path"]:
-            if existing.get("block") != entry["block"]:
-                log(f"[INFO] Path already present in config but with different block status: {p}")
+            if (
+                existing.get("block") != entry["block"]
+                or (app_name and existing.get("name") != app_name)
+                or (icon_path and existing.get("icon") != str(icon_path))
+            ):
+                log(f"[INFO] Updating existing app config: {p}")
                 data.remove(existing)
             else:
                 log(f"[INFO] Path already present in config: {p}")
@@ -135,12 +161,17 @@ def _check_json_integrity():
         path = entry.get("path")
         p = Path(path).expanduser().resolve()
 
+        if is_sealed_executable(p):
+            log(f" -> Refusing Sealed executable, removing it: {p}")
+            data.remove(entry)
+            continue
+
         if not p.exists():
             log(f" -> Path no longer exists, removing it: {p}")
             data.remove(entry)
+            continue
         
-        normalized_path = str(p)
-        if normalized_path in seen_paths:
+        if str(p) in seen_paths:
             log(f" -> Duplicate path, removing it: {p}")
             data.remove(entry)
             continue
@@ -150,7 +181,7 @@ def _check_json_integrity():
             data.remove(entry)
             continue
 
-        seen_paths.add(normalized_path)
+        seen_paths.add(str(p))
 
     data.sort(key=lambda entry: entry["path"].casefold())
 

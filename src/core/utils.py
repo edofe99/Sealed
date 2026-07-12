@@ -23,19 +23,12 @@ def log(*message : str):
     print(date_prefix,*message)
 
 
-def load_json(path : str | Path) -> dict:
-    if not Path(path).is_file() and not Path(path).exists():
-        log(f'{path} does not exist, creating new file.')
-        return []
+def load_json(path: str | Path) -> list:
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"Invalid JSON in {path}: {e}") from e
-
-    if not isinstance(data, list):
-        raise RuntimeError(f"Config must be a JSON list of entries, got {type(data).__name__}")
-
-    return data
+        return data if isinstance(data, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
 
 def get_current_user() -> str:
 

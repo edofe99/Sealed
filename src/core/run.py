@@ -69,37 +69,20 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
     # -------------------------- FILE / FODLER BLOCKING -------------------------- #
     p.add_argument(
-        "--block-files-folders",
-        action="store_true",
-        help="Block files and folder during the next session.",
-    )
-
-    p.add_argument(
         "--add-file-folder",
         metavar="PATH",
         type=Path,
-        help="Add an absolute file/folder path to FILE_FOLDERS_TO_BLOCK.",
+        help="Add path to a file or folder. When the block will start the file/folder will be read-only and immutable for the user.",
     )
 
-    p.add_argument(
-        "--no-exec",
-        action="store_true",
-        help="When used with --add-file-folder, makes the file owned by root and non-executable during the block.",
-    )
-    
     # -------------------------------- APP BLOCKER ------------------------------- #
-    p.add_argument(
-        "--block-apps",
-        action="store_true",
-        help="Block apps specified in the list of apps to blockduring the next session.",
-    )
-
     p.add_argument(
         "--add-app",
         metavar="PATH",
         type=Path,
-        help="Add an absolute executable path to the list of apps to block. If this command is used during a block session, then the app will be killed and blocked until the end of the session.",
+        help="Add path to an executable file. When the block will start any process will be killed and the executable will be blocked.",
     )
+    
     # --------------------------------- UNINSTALL -------------------------------- #
     p.add_argument(
         "--uninstall",
@@ -137,36 +120,20 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             p.error("--remaining can only be run alone")
         return args
 
-    # --add-file-folder mode (only allowed with optional --no-exec)
-    if args.add_file_folder is not None:
-        allowed = {"--add-file-folder", "--no-exec"}
-        used_flags = [arg for arg in argv if arg.startswith("--")]
-
-        if any(flag not in allowed for flag in used_flags):
-            p.error("--add-file-folder can only be used with optional --no-exec (no other flags)")
-        
-        # Ensure the given path is absolute
-        args.add_file_folder = args.add_file_folder.expanduser().resolve()
-        if not args.add_file_folder.is_absolute():
-            p.error(f"--add-file-folder must be an absolute path: {args.add_file_folder}")
-
-        return args
-
-    # --no-exec requires to be run with --add-file-folder
-    if args.no_exec and args.add_file_folder is None:
-        p.error("--no-exec can't be run alone (requires --add-file-folder)")
-
     # --exception requires --block
     if args.exception and args.block is None:
         p.error("--exception requires --block")
 
     # --block-files-folders requires --block
-    if args.block_files_folders and args.block is None:
-        p.error("--block-files-folders requires --block")
+    # if args.block_files_folders and args.block is None:
+    #     p.error("--block-files-folders requires --block")
 
-    # --block-apps requires --block
-    if args.block_apps and args.block is None:
-        p.error("--block-apps requires --block")
+    # --add-file-folder alone
+    if args.add_file_folder:
+        used_flags = [arg for arg in argv if arg.startswith("--")]
+        if len(used_flags) != 1:
+            p.error("--add_file_folder can only be run alone")
+        return args
 
     # --add-app alone
     if args.add_app:
@@ -216,11 +183,11 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         exceptions = format_exceptions_args(args.exception)
 
     if args.block:
-        system_block(minutes=args.block,exceptions=exceptions,block_file_folders=args.block_files_folders, block_applications=args.block_apps)
+        system_block(minutes=args.block,exceptions=exceptions)
         return 0
 
     if args.add_file_folder:
-        add_file_folder(args.add_file_folder, args.no_exec)
+        add_file_folder(args.add_file_folder)
         return 0
     
     if args.add_app:

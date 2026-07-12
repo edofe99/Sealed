@@ -110,8 +110,9 @@ def block_file_folder(file_folder_to_block: str | Path | None = None, block_exec
         if not p.exists():
             remove_file_folder(p)
             continue
-
-        exec_block = entry.get("block_execution", False)
+        
+        #### DISABLED LOGIC
+        exec_block =  False #entry.get("block_execution", False)
         if not isinstance(exec_block, bool):
             raise RuntimeError(f"Entry #{i} 'block_execution' must be boolean")
 
@@ -136,6 +137,9 @@ def add_file_folder(file_folder: Path, block_execution: bool = False) -> None:
 
     If the JSON file does not exist, it is created.
     If the path already exists, it is not duplicated.
+
+    LEGACY: block_execution is a legacy option that will make the file/folder non-executable during the block session.
+    I'm keeping the logic here so that in future i can swap it with "No-Read" option.
     """
 
     p = file_folder.expanduser().resolve()

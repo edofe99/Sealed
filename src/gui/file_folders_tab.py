@@ -76,6 +76,9 @@ class FileFoldersTab(QWidget):
         self.table.setAlternatingRowColors(True)
         self.table.itemChanged.connect(self._save_path_change)
 
+        # Keep the block-execution column and its logic for future use.
+        self.table.setColumnHidden(2, True)
+
         layout.addWidget(self.table)
 
         buttons_layout = QHBoxLayout()

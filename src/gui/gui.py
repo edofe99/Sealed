@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from src.core.block_root import system_block
 from src.core.defaults import BLOCK_FILE, SEALED_DIR
 from src.core.utils import is_block_active, startup_checks
+from src.gui.apps import ApplicationsTab
 from src.gui.check_root import ensure_running_as_root
 from src.gui.file_folders_tab import FileFoldersTab
 from src.gui.settings_tab import SettingsTab
@@ -38,7 +39,6 @@ APP_ICON_PATHS = (
     Path("/usr/share/icons/hicolor/512x512/apps/sealed.png"),
 )
 DEFAULT_SETTINGS = {
-    "block_files_folders": False,
     "leechblock_policy": True,
 }
 
@@ -100,13 +100,9 @@ def main() -> int:
     settings_group = QGroupBox("Block Settings")
     settings_layout = QVBoxLayout(settings_group)
 
-    block_files_folders_checkbox = QCheckBox("Block Files && Folders")
-    block_files_folders_checkbox.setChecked(settings["block_files_folders"])
-
     leechblock_policy_checkbox = QCheckBox("LeechBlock policy")
     leechblock_policy_checkbox.setChecked(settings["leechblock_policy"])
 
-    settings_layout.addWidget(block_files_folders_checkbox)
     settings_layout.addWidget(leechblock_policy_checkbox)
 
     minutes_input = QSpinBox()
@@ -160,7 +156,6 @@ def main() -> int:
             system_block(
                 minutes=minutes_input.value(),
                 leechblock_blocker=leechblock_policy_checkbox.isChecked(),
-                block_file_folders=block_files_folders_checkbox.isChecked(),
             )
         except Exception as error:
             QMessageBox.critical(window, "Sealed", str(error))
@@ -170,7 +165,6 @@ def main() -> int:
     def save_current_settings() -> None:
         save_settings(
             {
-                "block_files_folders": block_files_folders_checkbox.isChecked(),
                 "leechblock_policy": leechblock_policy_checkbox.isChecked(),
             }
         )
@@ -179,7 +173,6 @@ def main() -> int:
     timer.timeout.connect(update_ui_state)
     timer.start(1000)
     minutes_input.valueChanged.connect(update_ui_state)
-    block_files_folders_checkbox.toggled.connect(save_current_settings)
     leechblock_policy_checkbox.toggled.connect(save_current_settings)
     start_button.clicked.connect(start_block)
     update_ui_state()
@@ -190,6 +183,7 @@ def main() -> int:
     sealed_block_layout.addWidget(start_button)
 
     tabs.addTab(sealed_block_tab, "Sealed Block")
+    tabs.addTab(ApplicationsTab(), "Applications")
     tabs.addTab(FileFoldersTab(), "Files and Folders")
     tabs.addTab(SettingsTab(), "Settings")
 
