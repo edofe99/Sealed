@@ -12,8 +12,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.core.defaults import MINIMUM_MINUTES_TO_LOCK, USER_LOCK_FILE
 from src.core.lock_access import lock_access
-from src.core.defaults import MINIMUM_MINUTES_TO_LOCK
 from src.core.utils import get_remaining_minutes, is_block_active
 
 
@@ -66,7 +66,7 @@ class LockAccessTab(QWidget):
         self.update_ui_state()
 
     def selected_minutes(self) -> int | None:
-        if not self.lock_access_checkbox.isChecked():
+        if USER_LOCK_FILE.exists() or not self.lock_access_checkbox.isChecked():
             return None
         return self.minutes_input.value()
 
@@ -93,15 +93,22 @@ class LockAccessTab(QWidget):
     def update_ui_state(self) -> None:
         checkbox_active = self.lock_access_checkbox.isChecked()
         block_active = is_block_active()
+        user_lock_active = USER_LOCK_FILE.exists()
 
         if self._last_block_active and not block_active:
             self._lock_scheduled = False
 
-        self.minutes_input.setEnabled(checkbox_active)
+        self.setEnabled(not user_lock_active)
+        self.minutes_input.setEnabled(checkbox_active and not user_lock_active)
         self.status_label.setVisible(checkbox_active)
-        self.lock_button.setVisible(block_active and checkbox_active)
+        self.lock_button.setVisible(
+            block_active and checkbox_active and not user_lock_active
+        )
         self.lock_button.setEnabled(
-            block_active and checkbox_active and not self._lock_scheduled
+            block_active
+            and checkbox_active
+            and not user_lock_active
+            and not self._lock_scheduled
         )
         self._update_time_label()
         self._last_block_active = block_active

@@ -1,5 +1,6 @@
 import pwd
 
+from src.core.defaults import USER_LOCK_FILE
 from src.core.utils import get_current_user, log, schedule_run_cmd, send_notification, run_cmd
 
 def _get_current_account_expiry(user: str) -> str:
@@ -37,17 +38,20 @@ def schedule_logout(minutes: int) -> None:
 
 
 def lock_access(minutes_to_start: int, minutes_to_end: int) -> None:
+    
+    if USER_LOCK_FILE.exists():
+        raise RuntimeError("User access lock is already scheduled or active.")
+    
     user = get_current_user()
     previous_expiry = _get_current_account_expiry(user)
 
-    log(f'Scheduling user account to be unlocked in {minutes_to_start + minutes_to_end} minutes')
-    schedule_run_cmd(
-        ["chage", "-E", previous_expiry, user],
-        minutes=minutes_to_start + minutes_to_end)
+    log(f'Scheduling user account to be unlocked in {minutes_to_end} minutes')
+    schedule_run_cmd(["chage", "-E", previous_expiry, user],minutes=minutes_to_end)
 
     log(f'Scheduling user account to be locked in {minutes_to_start} minutes')
-    schedule_run_cmd(
-        ["chage", "-E", "1970-01-02", user],
-        minutes=minutes_to_start)
+    schedule_run_cmd(["chage", "-E", "1970-01-02", user],minutes=minutes_to_start)
     
+    run_cmd(['touch', str(USER_LOCK_FILE)])
+    schedule_run_cmd(['rm', str(USER_LOCK_FILE)],minutes=minutes_to_end)
+
     schedule_logout(minutes_to_start)
