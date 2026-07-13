@@ -129,13 +129,13 @@ class LockAccessTab(QWidget):
             self.update_ui_state()
             return
 
-        if delay_minutes >= remaining_minutes:
-            QMessageBox.warning(
-                self,
-                "Sealed",
-                "The access lock must start before the current block ends.",
-            )
-            return
+        # if delay_minutes >= remaining_minutes:
+        #     QMessageBox.warning(
+        #         self,
+        #         "Sealed",
+        #         "The access lock must start before the current block ends.",
+        #     )
+        #     return
 
         try:
             lock_access(

@@ -19,7 +19,7 @@ POLICIES_PATH = Path('/etc/firefox/policies/')
 POLICIES_FILE = POLICIES_PATH / 'policies.json'
 
 # Miminum amount of minutes before the block end that --lock-access must be set
-MINIMUM_MINUTES_TO_LOCK = 1
+MINIMUM_MINUTES_TO_LOCK = 10
 USER_LOCK_FILE = SEALED_DIR / "user_lock.lock"
 
 # Allow running atq for checking at queue
