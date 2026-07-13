@@ -1,4 +1,3 @@
-from email import utils
 import os
 import pwd
 import shlex

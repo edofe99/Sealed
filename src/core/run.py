@@ -1,11 +1,10 @@
 import argparse
-from datetime import datetime
 import sys
 from pathlib import Path
 from typing import Optional, Sequence, Union, Iterable
 
 from src.core.block_root import system_block
-from src.core.defaults import BLOCK_FILE, ExceptionType
+from src.core.defaults import BLOCK_FILE, ExceptionType, MINIMUM_MINUTES_TO_LOCK
 from src.core.utils import get_remaining_minutes, startup_checks, format_exceptions_args, log, is_block_active, uninstall
 from src.core.block_file_folder import add_file_folder
 from src.core.block_apps import add_app
@@ -144,13 +143,13 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         
         # Check if --lock-access is lower than remaining block time if a block is already active
         if is_block_active():
-            if args.lock_access >= get_remaining_minutes() - 5:
-                p.error("--lock-access must be at least 5 minutes before the block end")
+            if args.lock_access >= get_remaining_minutes() - MINIMUM_MINUTES_TO_LOCK:
+                p.error(f"--lock-access must be at least {MINIMUM_MINUTES_TO_LOCK} minutes before the block end")
             return args
 
     # --lock-access must be lower than --block
-    if args.lock_access and args.block and args.lock_access >= args.block - 5:
-        p.error("--lock-access must be at least 5 minutes before --block")
+    if args.lock_access and args.block and args.lock_access >= args.block - MINIMUM_MINUTES_TO_LOCK:
+        p.error(f"--lock-access must be at least {MINIMUM_MINUTES_TO_LOCK} minutes before --block")
     
     # --block-files-folders requires --block
     # if args.block_files_folders and args.block is None:
@@ -215,7 +214,6 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         return 0
 
     if args.lock_access and not args.block:
-
         lock_access(minutes_to_start=args.lock_access, minutes_to_end=get_remaining_minutes())
         return 0
 
