@@ -1,6 +1,6 @@
 import pwd
 
-from src.core.defaults import USER_LOCK_FILE
+from src.core.defaults import MINIMUM_MINUTES_TO_LOCK, USER_LOCK_FILE
 from src.core.utils import get_current_user, log, schedule_run_cmd, send_notification, run_cmd
 
 def _get_current_account_expiry(user: str) -> str:
@@ -41,6 +41,9 @@ def lock_access(minutes_to_start: int, minutes_to_end: int) -> None:
     
     if USER_LOCK_FILE.exists():
         raise RuntimeError("User access lock is already scheduled or active.")
+    
+    if minutes_to_start >= minutes_to_end - MINIMUM_MINUTES_TO_LOCK:
+        raise RuntimeError(f"Can't schedule user access lock. The lock must start at least {MINIMUM_MINUTES_TO_LOCK} minutes before the block ends.")
     
     user = get_current_user()
     previous_expiry = _get_current_account_expiry(user)

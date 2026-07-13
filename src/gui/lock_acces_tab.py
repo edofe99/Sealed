@@ -140,7 +140,7 @@ class LockAccessTab(QWidget):
         try:
             lock_access(
                 minutes_to_start=delay_minutes,
-                minutes_to_end=remaining_minutes - delay_minutes,
+                minutes_to_end=remaining_minutes,
             )
         except Exception as error:
             QMessageBox.critical(self, "Sealed", str(error))

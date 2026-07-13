@@ -217,7 +217,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         remaining_minutes = get_remaining_minutes()
         lock_access(
             minutes_to_start=args.lock_access,
-            minutes_to_end=remaining_minutes - args.lock_access,
+            minutes_to_end=remaining_minutes,
         )
         return 0
 
