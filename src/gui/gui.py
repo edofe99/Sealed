@@ -7,8 +7,6 @@ from PySide6.QtCore import QCoreApplication, Qt, QTimer
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import (
     QApplication,
-    QCheckBox,
-    QGroupBox,
     QLabel,
     QMainWindow,
     QMessageBox,
@@ -99,14 +97,7 @@ def main() -> int:
     settings = load_settings()
     save_settings(settings)
     lock_access_tab = LockAccessTab(settings, save_settings)
-
-    settings_group = QGroupBox("Block Settings")
-    settings_layout = QVBoxLayout(settings_group)
-
-    leechblock_policy_checkbox = QCheckBox("LeechBlock policy")
-    leechblock_policy_checkbox.setChecked(settings["leechblock_policy"])
-
-    settings_layout.addWidget(leechblock_policy_checkbox)
+    settings_tab = SettingsTab(settings, save_settings)
 
     minutes_input = QSpinBox()
     minutes_input.setRange(1, 24 * 60)
@@ -146,7 +137,6 @@ def main() -> int:
     def update_ui_state() -> None:
         block_active = is_block_active()
 
-        settings_group.setEnabled(not block_active)
         minutes_input.setEnabled(not block_active)
         start_button.setEnabled(not block_active)
 
@@ -173,7 +163,7 @@ def main() -> int:
         try:
             system_block(
                 minutes=minutes_input.value(),
-                leechblock_blocker=leechblock_policy_checkbox.isChecked(),
+                leechblock_blocker=settings_tab.leechblock_policy_enabled(),
                 lock_access_minutes=lock_access_minutes,
             )
         except Exception as error:
@@ -183,10 +173,6 @@ def main() -> int:
                 lock_access_tab.mark_lock_scheduled()
 
         update_ui_state()
-
-    def save_current_settings() -> None:
-        settings["leechblock_policy"] = leechblock_policy_checkbox.isChecked()
-        save_settings(settings)
 
     def save_block_duration(value: int) -> None:
         settings["block_duration"] = value
@@ -198,11 +184,9 @@ def main() -> int:
     minutes_input.valueChanged.connect(update_ui_state)
     minutes_input.valueChanged.connect(save_block_duration)
     minutes_input.valueChanged.connect(lock_access_tab.set_block_minutes)
-    leechblock_policy_checkbox.toggled.connect(save_current_settings)
     start_button.clicked.connect(start_block)
     update_ui_state()
 
-    sealed_block_layout.addWidget(settings_group)
     sealed_block_layout.addWidget(minutes_input)
     sealed_block_layout.addWidget(status_label)
     sealed_block_layout.addWidget(start_button)
@@ -211,7 +195,7 @@ def main() -> int:
     tabs.addTab(lock_access_tab, "Lock Access")
     tabs.addTab(ApplicationsTab(), "Applications")
     tabs.addTab(FileFoldersTab(), "Files and Folders")
-    tabs.addTab(SettingsTab(), "Settings")
+    tabs.addTab(settings_tab, "Settings")
 
     window.setCentralWidget(tabs)
     window.resize(650, 420)

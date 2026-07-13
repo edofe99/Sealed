@@ -10,6 +10,7 @@ BLOCK_FILE = SEALED_DIR / "block.txt"
 FILE_FOLDERS_TO_BLOCK = SEALED_DIR / "file_folders.json"
 APPS_TO_BLOCK = SEALED_DIR / "apps.json"
 SETTINGS_FILE = SEALED_DIR / "settings.json"
+LOG_FILE = SEALED_DIR / "log.txt"
 
 PERMISSIONS_BACKUP_DIR = SEALED_DIR / 'permissions_backup'
 

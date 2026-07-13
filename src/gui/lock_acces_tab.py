@@ -43,13 +43,20 @@ class LockAccessTab(QWidget):
         self.minutes_input.setSuffix(" minutes")
         self.minutes_input.setAlignment(Qt.AlignCenter)
         self.minutes_input.setStyleSheet("font-size: 22px; padding: 8px;")
+        self.minutes_input.setFixedSize(self.minutes_input.sizeHint())
 
         self.status_label = QLabel()
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setStyleSheet("color: grey; font-size: 14px;")
+        status_size_policy = self.status_label.sizePolicy()
+        status_size_policy.setRetainSizeWhenHidden(True)
+        self.status_label.setSizePolicy(status_size_policy)
 
         self.lock_button = QPushButton("Block User Access")
         self.lock_button.setStyleSheet("font-size: 20px; padding: 10px 18px;")
+        button_size_policy = self.lock_button.sizePolicy()
+        button_size_policy.setRetainSizeWhenHidden(True)
+        self.lock_button.setSizePolicy(button_size_policy)
 
         layout.addWidget(self.lock_access_checkbox)
         layout.addWidget(self.minutes_input)
@@ -87,7 +94,7 @@ class LockAccessTab(QWidget):
     def _update_time_label(self) -> None:
         lock_time = datetime.now() + timedelta(minutes=self.minutes_input.value())
         self.status_label.setText(
-            f"User will be locked at: {lock_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            f"User will be locked at:\n {lock_time.strftime('%Y-%m-%d %H:%M:%S')}"
         )
 
     def update_ui_state(self) -> None:
@@ -100,7 +107,7 @@ class LockAccessTab(QWidget):
 
         self.setEnabled(not user_lock_active)
         self.minutes_input.setEnabled(checkbox_active and not user_lock_active)
-        self.status_label.setVisible(checkbox_active)
+        self.status_label.setVisible(checkbox_active and not user_lock_active)
         self.lock_button.setVisible(
             block_active and checkbox_active and not user_lock_active
         )

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import json
 
 from src.core.defaults import (
+    LOG_FILE,
     SubprocessCommand,
     ExceptionType,
     DEFAULT_EXCEPTIONS,
@@ -21,8 +22,14 @@ from src.core.defaults import (
 
 def log(*message : str):
     date_prefix = f"[{(datetime.now()).isoformat(timespec='seconds')}]"
-    print(date_prefix,*message)
+    final_message = date_prefix + " ".join(message)
+    print(final_message)
+    with open(LOG_FILE, "a") as f:
+        f.write(final_message + "\n")
 
+    lines = LOG_FILE.read_text().splitlines(keepends=True)
+    if len(lines) > 3000:
+        LOG_FILE.write_text("".join(lines[-3000:]))
 
 def load_json(path: str | Path) -> list:
     try:
