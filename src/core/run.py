@@ -214,7 +214,11 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         return 0
 
     if args.lock_access and not args.block:
-        lock_access(minutes_to_start=args.lock_access, minutes_to_end=get_remaining_minutes())
+        remaining_minutes = get_remaining_minutes()
+        lock_access(
+            minutes_to_start=args.lock_access,
+            minutes_to_end=remaining_minutes - args.lock_access,
+        )
         return 0
 
     if args.add_file_folder:

@@ -20,19 +20,18 @@ from PySide6.QtWidgets import (
 )
 
 from src.core.block_root import system_block
-from src.core.defaults import BLOCK_FILE, SEALED_DIR
+from src.core.defaults import BLOCK_FILE, SEALED_DIR, SETTINGS_FILE
 from src.core.utils import is_block_active, startup_checks
 from src.gui.apps import ApplicationsTab
 from src.gui.check_root import ensure_running_as_root
 from src.gui.file_folders_tab import FileFoldersTab
+from src.gui.lock_acces_tab import LockAccessTab
 from src.gui.settings_tab import SettingsTab
 from src.gui.theme import apply_theme
 
 QCoreApplication.setApplicationName("Sealed")
 QCoreApplication.setOrganizationName("Sealed")
 QGuiApplication.setDesktopFileName("sealed")
-
-SETTINGS_FILE = SEALED_DIR / "settings.json"
 APP_ICON_PATHS = (
     SEALED_DIR / "assets" / "sealed.png",
     Path(__file__).resolve().parents[2] / "assets" / "sealed.png",
@@ -40,6 +39,9 @@ APP_ICON_PATHS = (
 )
 DEFAULT_SETTINGS = {
     "leechblock_policy": True,
+    "block_duration": 60,
+    "lock_access": False,
+    "lock_access_in_minutes": 60,
 }
 
 
@@ -55,7 +57,7 @@ def app_icon() -> QIcon:
     return QIcon()
 
 
-def load_settings() -> dict[str, bool]:
+def load_settings() -> dict[str, object]:
     try:
         # start with DEFAULT_SETTINGS, then overwrite with values from loaded_settings
         return DEFAULT_SETTINGS | json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
@@ -63,7 +65,7 @@ def load_settings() -> dict[str, bool]:
         return DEFAULT_SETTINGS.copy()
 
 
-def save_settings(settings: dict[str, bool]) -> None:
+def save_settings(settings: dict[str, object]) -> None:
     SETTINGS_FILE.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
 
 
@@ -96,6 +98,7 @@ def main() -> int:
 
     settings = load_settings()
     save_settings(settings)
+    lock_access_tab = LockAccessTab(settings, save_settings)
 
     settings_group = QGroupBox("Block Settings")
     settings_layout = QVBoxLayout(settings_group)
@@ -107,10 +110,13 @@ def main() -> int:
 
     minutes_input = QSpinBox()
     minutes_input.setRange(1, 24 * 60)
-    minutes_input.setValue(60)
+    minutes_input.setValue(int(settings["block_duration"]))
     minutes_input.setSuffix(" minutes")
     minutes_input.setAlignment(Qt.AlignCenter)
     minutes_input.setStyleSheet("font-size: 22px; padding: 8px;")
+    settings["block_duration"] = minutes_input.value()
+    save_settings(settings)
+    lock_access_tab.set_block_minutes(minutes_input.value())
 
     status_label = QLabel()
     status_label.setAlignment(Qt.AlignCenter)
@@ -150,29 +156,48 @@ def main() -> int:
             update_remaining_time_label()
 
     def start_block() -> None:
+        lock_access_minutes = lock_access_tab.selected_minutes()
+        if (
+            lock_access_minutes is not None
+            and lock_access_minutes >= minutes_input.value()
+        ):
+            QMessageBox.warning(
+                window,
+                "Sealed",
+                "The access lock must start before the block ends.",
+            )
+            return
+
         start_button.setEnabled(False)
 
         try:
             system_block(
                 minutes=minutes_input.value(),
                 leechblock_blocker=leechblock_policy_checkbox.isChecked(),
+                lock_access_minutes=lock_access_minutes,
             )
         except Exception as error:
             QMessageBox.critical(window, "Sealed", str(error))
+        else:
+            if lock_access_minutes is not None:
+                lock_access_tab.mark_lock_scheduled()
 
         update_ui_state()
 
     def save_current_settings() -> None:
-        save_settings(
-            {
-                "leechblock_policy": leechblock_policy_checkbox.isChecked(),
-            }
-        )
+        settings["leechblock_policy"] = leechblock_policy_checkbox.isChecked()
+        save_settings(settings)
+
+    def save_block_duration(value: int) -> None:
+        settings["block_duration"] = value
+        save_settings(settings)
 
     timer = QTimer(window)
     timer.timeout.connect(update_ui_state)
     timer.start(1000)
     minutes_input.valueChanged.connect(update_ui_state)
+    minutes_input.valueChanged.connect(save_block_duration)
+    minutes_input.valueChanged.connect(lock_access_tab.set_block_minutes)
     leechblock_policy_checkbox.toggled.connect(save_current_settings)
     start_button.clicked.connect(start_block)
     update_ui_state()
@@ -183,6 +208,7 @@ def main() -> int:
     sealed_block_layout.addWidget(start_button)
 
     tabs.addTab(sealed_block_tab, "Sealed Block")
+    tabs.addTab(lock_access_tab, "Lock Access")
     tabs.addTab(ApplicationsTab(), "Applications")
     tabs.addTab(FileFoldersTab(), "Files and Folders")
     tabs.addTab(SettingsTab(), "Settings")

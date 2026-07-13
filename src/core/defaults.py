@@ -9,6 +9,7 @@ RESTORE_SCRIPT = SEALED_DIR / 'src/core/restore_file_folder.py'
 BLOCK_FILE = SEALED_DIR / "block.txt"
 FILE_FOLDERS_TO_BLOCK = SEALED_DIR / "file_folders.json"
 APPS_TO_BLOCK = SEALED_DIR / "apps.json"
+SETTINGS_FILE = SEALED_DIR / "settings.json"
 
 PERMISSIONS_BACKUP_DIR = SEALED_DIR / 'permissions_backup'
 

@@ -70,7 +70,10 @@ def system_block(block_root = True,
 
     if  lock_access_minutes is not None:
         utils.log(f'Locking user access in {lock_access_minutes} minutes')
-        lock_access(minutes_to_start=lock_access_minutes, minutes_to_end=minutes)
+        lock_access(
+            minutes_to_start=lock_access_minutes,
+            minutes_to_end=minutes - lock_access_minutes,
+        )
 
     block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
     BLOCK_FILE.write_text(block_end + "\n")
