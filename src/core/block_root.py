@@ -5,6 +5,7 @@ from src.core.block_file_folder import block_file_folder
 from src.core.block_apps import block_apps
 from src.core.defaults import BLOCK_FILE, ExceptionType
 import src.core.utils as utils
+from src.core.lock_access import lock_access
 import src.website_blocker.leechblock as leechblock
 
 def _block_user_access_to_root(user, minutes, exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None):
@@ -36,7 +37,8 @@ def system_block(block_root = True,
                  leechblock_blocker = True,
                  exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None,
                  block_file_folders : bool = True,
-                 block_applications : bool = True) -> None:
+                 block_applications : bool = True,
+                 lock_access_minutes : int = None) -> None:
 
     # ------------------------------ Initial checks ------------------------------ #
     user = utils.startup_checks()
@@ -66,9 +68,12 @@ def system_block(block_root = True,
         utils.log('Blocking apps')
         block_apps(schedule_restore=minutes)
 
+    if  lock_access_minutes is not None:
+        utils.log(f'Locking user access in {lock_access_minutes} minutes')
+        lock_access(minutes_to_start=lock_access_minutes, minutes_to_end=minutes)
+
     block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
     BLOCK_FILE.write_text(block_end + "\n")
-
 
     # ------------------------------- NOTIFICATIONS ------------------------------ #
 

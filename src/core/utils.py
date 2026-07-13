@@ -300,3 +300,21 @@ def send_notification(message : str = None, minutes : int = None):
         schedule_run_cmd(notify_params, minutes=minutes)
     else:
         run_cmd(notify_params, skip_check=True)
+
+def get_remaining_minutes() -> Optional[int]:
+    """
+    Returns the remaining minutes of the block if active, otherwise None.
+    """
+    try:
+        time_str = BLOCK_FILE.read_text().strip()
+        file_time = datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+        now = datetime.now()
+
+        if file_time > now:
+            remaining_time = (file_time - now).total_seconds() / 60
+            return int(remaining_time)
+        else:
+            run_cmd(['rm', str(BLOCK_FILE)])
+            return None
+    except (FileNotFoundError, ValueError):
+        return None

@@ -1,13 +1,15 @@
 import argparse
+from datetime import datetime
 import sys
 from pathlib import Path
 from typing import Optional, Sequence, Union, Iterable
 
 from src.core.block_root import system_block
 from src.core.defaults import BLOCK_FILE, ExceptionType
-from src.core.utils import startup_checks, format_exceptions_args, log, is_block_active, uninstall
+from src.core.utils import get_remaining_minutes, startup_checks, format_exceptions_args, log, is_block_active, uninstall
 from src.core.block_file_folder import add_file_folder
 from src.core.block_apps import add_app
+from src.core.lock_access import lock_access
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
@@ -25,6 +27,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             "  sealed --block 10\n"
             "  sealed --block 10 --exception \"/usr/bin/pacman -Rns -- *\"\n"
             "  sealed --block 10 --exception \"/usr/bin/timeshift\" --exception \"/usr/bin/dnf remove *\"\n"
+            "  sealed --block 60 --lock-access 10\n"
+            "  sealed --lock-access 10\n"
             "  sealed --remaining\n"
             "  sealed --check-sudoers\n"
             "  sealed --add-file-folder /abs/path/to/thing\n"
@@ -41,6 +45,14 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         help="Start a sealed session for MINUTES (positive integer).",
     )
 
+    p.add_argument(
+        "--lock-access",
+        type=int,
+        metavar="MINUTES",
+        help="Lock access to user account in MINUTES (positive integer, lower than block duration).\n" \
+        "User will be logged out in MINUTES and will not be able to log back in for the duration of the block." \
+        "Can be used in conjuction with --block or alone when a block is already active.",
+    )
 
     p.add_argument(
         "--exception",
@@ -124,6 +136,22 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     if args.exception and args.block is None:
         p.error("--exception requires --block")
 
+    # --lock-access requires --block or active block
+    if args.lock_access and args.block is None:
+        
+        if not is_block_active():
+            p.error("--lock-access can be run alone only when a block is active")
+        
+        # Check if --lock-access is lower than remaining block time if a block is already active
+        if is_block_active():
+            if args.lock_access >= get_remaining_minutes() - 5:
+                p.error("--lock-access must be at least 5 minutes before the block end")
+            return args
+
+    # --lock-access must be lower than --block
+    if args.lock_access and args.block and args.lock_access >= args.block - 5:
+        p.error("--lock-access must be at least 5 minutes before --block")
+    
     # --block-files-folders requires --block
     # if args.block_files_folders and args.block is None:
     #     p.error("--block-files-folders requires --block")
@@ -183,7 +211,12 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         exceptions = format_exceptions_args(args.exception)
 
     if args.block:
-        system_block(minutes=args.block,exceptions=exceptions)
+        system_block(minutes=args.block,exceptions=exceptions,lock_access_minutes=args.lock_access)
+        return 0
+
+    if args.lock_access and not args.block:
+
+        lock_access(minutes_to_start=args.lock_access, minutes_to_end=get_remaining_minutes())
         return 0
 
     if args.add_file_folder:
