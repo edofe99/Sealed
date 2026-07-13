@@ -87,7 +87,7 @@ class LockAccessTab(QWidget):
     def _update_time_label(self) -> None:
         lock_time = datetime.now() + timedelta(minutes=self.minutes_input.value())
         self.status_label.setText(
-            f"User will be locked in: {lock_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            f"User will be locked at: {lock_time.strftime('%Y-%m-%d %H:%M:%S')}"
         )
 
     def update_ui_state(self) -> None:
@@ -98,7 +98,8 @@ class LockAccessTab(QWidget):
             self._lock_scheduled = False
 
         self.minutes_input.setEnabled(checkbox_active)
-        self.lock_button.setVisible(block_active)
+        self.status_label.setVisible(checkbox_active)
+        self.lock_button.setVisible(block_active and checkbox_active)
         self.lock_button.setEnabled(
             block_active and checkbox_active and not self._lock_scheduled
         )
