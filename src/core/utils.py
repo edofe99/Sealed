@@ -1,3 +1,4 @@
+from email import utils
 import os
 import pwd
 import shlex
@@ -15,6 +16,7 @@ from src.core.defaults import (
     BLOCK_FILE,
     SEALED_DIR,
     SEALED_BIN,
+    ICON_PATH
 )
 
 
@@ -272,3 +274,29 @@ def uninstall():
     
     log('Sealed has been completely uninstalled, no leftovers files.')
     raise RuntimeError("Sealed has been uninstalled.")
+
+
+def send_notification(message : str = None, minutes : int = None):
+    user = get_current_user()
+    uid = int(os.environ.get("SUDO_UID") or pwd.getpwnam(user).pw_uid)
+
+    notify_params = [
+        "runuser", "-u", user, "--",
+        "env",
+        f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
+        f"XDG_RUNTIME_DIR=/run/user/{uid}",
+        f"DISPLAY={os.environ.get('DISPLAY', ':0')}",
+        "notify-send",
+        "--urgency=normal",
+        "--app-name=Sealed",
+        f"--icon={ICON_PATH}",
+        "--expire-time=10000",
+        "--transient",
+        "Sealed",
+        message,
+    ]
+
+    if minutes is not None and minutes > 0:
+        schedule_run_cmd(notify_params, minutes=minutes)
+    else:
+        run_cmd(notify_params, skip_check=True)

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from src.core.block_file_folder import block_file_folder
 from src.core.block_apps import block_apps
-from src.core.defaults import BLOCK_FILE, ICON_PATH, ExceptionType
+from src.core.defaults import BLOCK_FILE, ExceptionType
 import src.core.utils as utils
 import src.website_blocker.leechblock as leechblock
 
@@ -71,41 +71,7 @@ def system_block(block_root = True,
 
 
     # ------------------------------- NOTIFICATIONS ------------------------------ #
-    import os
-    import pwd
 
-    user = utils.get_current_user()
-    uid = int(os.environ.get("SUDO_UID") or pwd.getpwnam(user).pw_uid)
-
-    utils.run_cmd([
-        "runuser", "-u", user, "--",
-        "env",
-        f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
-        f"XDG_RUNTIME_DIR=/run/user/{uid}",
-        f"DISPLAY={os.environ.get('DISPLAY', ':0')}",
-        "notify-send",
-        "--urgency=normal",
-        "--app-name=Sealed",
-        f"--icon={ICON_PATH}",
-        "--expire-time=10000",
-        "--transient",
-        "Sealed",
-        f"BLOCK ACTIVE UNTIL {block_end}",
-    ], skip_check=True)
-
-    utils.schedule_run_cmd([
-        "runuser", "-u", user, "--",
-        "env",
-        f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
-        f"XDG_RUNTIME_DIR=/run/user/{uid}",
-        "notify-send",
-        "--urgency=normal",
-        "--app-name=Sealed",
-        f"--icon={ICON_PATH}",
-        "--expire-time=10000",
-        "--transient",
-        "Sealed",
-        "BLOCK ENDED",
-    ], minutes)
-
+    utils.send_notification(f"BLOCK ACTIVE UNTIL {block_end}")
+    utils.send_notification("BLOCK ENDED", minutes)
     utils.log(f'BLOCK ACTIVE UNTIL {block_end}')
