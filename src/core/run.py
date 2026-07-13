@@ -49,7 +49,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         type=int,
         metavar="MINUTES",
         help="Lock access to user account in MINUTES (positive integer, lower than block duration).\n" \
-        "User will be logged out in MINUTES and will not be able to log back in for the duration of the block." \
+        "User will be logged out in MINUTES and will not be able to log back in for the duration of the block.\n" \
         "Can be used in conjuction with --block or alone when a block is already active.",
     )
 
