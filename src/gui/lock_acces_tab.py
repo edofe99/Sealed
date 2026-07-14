@@ -22,14 +22,15 @@ class LockAccessTab(QWidget):
         self,
         settings: dict[str, object],
         save_settings: Callable[[dict[str, object]], None],
+        get_block_minutes: Callable[[], int],
     ) -> None:
         super().__init__()
 
         self._settings = settings
         self._save_settings = save_settings
+        self._get_block_minutes = get_block_minutes
         self._lock_scheduled = False
         self._last_block_active = False
-        self._block_minutes = int(settings["block_duration"])
 
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignCenter)
@@ -79,7 +80,6 @@ class LockAccessTab(QWidget):
         return self.minutes_input.value()
 
     def set_block_minutes(self, block_minutes: int) -> None:
-        self._block_minutes = block_minutes
         maximum = max(1, block_minutes - MINIMUM_MINUTES_TO_LOCK)
         self.minutes_input.setMaximum(maximum)
 
@@ -124,7 +124,9 @@ class LockAccessTab(QWidget):
 
     def _schedule_lock(self) -> None:
         remaining_minutes = (
-            get_remaining_minutes() if is_block_active() else self._block_minutes
+            get_remaining_minutes()
+            if is_block_active()
+            else self._get_block_minutes()
         )
         delay_minutes = self.minutes_input.value()
 

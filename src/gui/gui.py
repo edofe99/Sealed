@@ -96,8 +96,6 @@ def main() -> int:
 
     settings = load_settings()
     save_settings(settings)
-    lock_access_tab = LockAccessTab(settings, save_settings)
-    settings_tab = SettingsTab(settings, save_settings)
 
     minutes_input = QSpinBox()
     minutes_input.setRange(1, 24 * 60)
@@ -107,6 +105,13 @@ def main() -> int:
     minutes_input.setStyleSheet("font-size: 22px; padding: 8px;")
     settings["block_duration"] = minutes_input.value()
     save_settings(settings)
+
+    lock_access_tab = LockAccessTab(
+        settings,
+        save_settings,
+        get_block_minutes=minutes_input.value,
+    )
+    settings_tab = SettingsTab(settings, save_settings)
     lock_access_tab.set_block_minutes(minutes_input.value())
 
     status_label = QLabel()
