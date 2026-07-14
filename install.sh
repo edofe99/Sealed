@@ -29,7 +29,6 @@ DEST_ASSETS_DIR="${DEST_DIR}/assets"
 
 # Before starting installation, check that in current folder we have all the files we need
 [[ -f "$SRC_MAIN" ]] || { echo "Error: $SRC_MAIN not found."; exit 1; }
-# [[ -f "$SRC_RESTORE" ]] || { echo "Error: $SRC_RESTORE not found."; exit 1; }
 [[ -d "$SRC_APP_DIR" ]] || { echo "Error: $SRC_APP_DIR directory not found."; exit 1; }
 [[ -f "$SRC_POLICY" ]] || { echo "Error: $SRC_POLICY not found."; exit 1; }
 [[ -f "$SRC_DESKTOP" ]] || { echo "Error: $SRC_DESKTOP not found."; exit 1; }
@@ -53,7 +52,6 @@ install -m 0644 "$SRC_ICON" "${DEST_ASSETS_DIR}/sealed.png"
 # we save it as that because it's easier for sudoers file and "at" command just calling "sealed" instead of python sealed.py
 echo "Installing scripts"
 cp "$SRC_MAIN" "$DEST_APP"
-# cp "$SRC_RESTORE" "$DEST_RESTORE"
 if [[ -f "$SRC_GUI" ]]; then
   cp "$SRC_GUI" "$DEST_GUI"
 fi
@@ -61,7 +59,7 @@ fi
 echo "Ensuring permissions"
 # Make the "sealed" and "restore" files executable
 chmod +x "$DEST_APP"
-# chmod +x "$DEST_RESTORE"
+chmod +x "/usr/local/bin/sealed_src/src/core/restore_file_folder.py"
 if [[ -f "$DEST_GUI" ]]; then
   chmod +x "$DEST_GUI"
 fi

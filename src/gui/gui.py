@@ -116,10 +116,14 @@ def main() -> int:
     start_button = QPushButton("Start Block")
     start_button.setStyleSheet("font-size: 20px; padding: 10px 18px;")
 
+    scheduled_lock_label = QLabel("Scheduled lock user access")
+    scheduled_lock_label.setAlignment(Qt.AlignCenter)
+    scheduled_lock_label.setStyleSheet("color: #c85f72; font-size: 14px;")
+
     def update_end_time_label() -> None:
         end_time = datetime.now() + timedelta(minutes=minutes_input.value())
         status_label.setText(
-            f"Block End: {end_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            f"Block End: {end_time.strftime('%Y-%m-%d %H:%M')}"
         )
 
     def update_remaining_time_label() -> None:
@@ -127,18 +131,19 @@ def main() -> int:
         block_end = datetime.strptime(block_end_text, "%Y-%m-%d %H:%M")
         remaining = max(block_end - datetime.now(), timedelta())
         total_seconds = int(remaining.total_seconds())
-        hours, remainder = divmod(total_seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
+        total_minutes = (total_seconds + 59) // 60
+        hours, minutes = divmod(total_minutes, 60)
 
-        status_label.setText(
-            f"Remaining: {hours:02d}:{minutes:02d}:{seconds:02d}"
-        )
+        status_label.setText(f"Remaining: {hours:02d}:{minutes:02d}")
 
     def update_ui_state() -> None:
         block_active = is_block_active()
 
         minutes_input.setEnabled(not block_active)
         start_button.setEnabled(not block_active)
+        scheduled_lock_label.setVisible(
+            lock_access_tab.lock_access_checkbox.isChecked() and not block_active
+        )
 
         if not block_active:
             update_end_time_label()
@@ -184,12 +189,14 @@ def main() -> int:
     minutes_input.valueChanged.connect(update_ui_state)
     minutes_input.valueChanged.connect(save_block_duration)
     minutes_input.valueChanged.connect(lock_access_tab.set_block_minutes)
+    lock_access_tab.lock_access_checkbox.toggled.connect(update_ui_state)
     start_button.clicked.connect(start_block)
     update_ui_state()
 
     sealed_block_layout.addWidget(minutes_input)
     sealed_block_layout.addWidget(status_label)
     sealed_block_layout.addWidget(start_button)
+    sealed_block_layout.addWidget(scheduled_lock_label)
 
     tabs.addTab(sealed_block_tab, "Sealed Block")
     tabs.addTab(lock_access_tab, "Lock Access")
