@@ -1,6 +1,7 @@
 import pwd
+import shlex
 
-from src.core.defaults import MINIMUM_MINUTES_TO_LOCK, USER_LOCK_FILE
+from src.core.defaults import BLOCK_FILE, MINIMUM_MINUTES_TO_LOCK, USER_LOCK_FILE
 from src.core.utils import get_current_user, log, schedule_run_cmd, send_notification, run_cmd
 
 def _get_current_account_expiry(user: str) -> str:
@@ -51,8 +52,40 @@ def lock_access(minutes_to_start: int, minutes_to_end: int) -> None:
     log(f'Scheduling user account to be unlocked in {minutes_to_end} minutes')
     schedule_run_cmd(["chage", "-E", previous_expiry, user],minutes=minutes_to_end)
 
-    log(f'Scheduling user account to be locked in {minutes_to_start} minutes')
-    schedule_run_cmd(["chage", "-E", "1970-01-02", user],minutes=minutes_to_start)
+    log(f'Scheduling user account to be locked in {minutes_to_start - MINIMUM_MINUTES_TO_LOCK} minutes')
+    """
+    We need to schedule the lock at least MINIMUM_MINUTES_TO_LOCK before the block ends, so we subtract that from minutes_to_start
+    This is to avoid a race condition where the computer might be suspended/turned before scheduled account lock and scheduled restore are meant to be run, 
+    because in this case they would be run at the same time once your computer is resumed.
+    """
+    schedule_run_cmd([
+        "/usr/bin/bash",
+        "-c",
+        f'''
+block_file={shlex.quote(str(BLOCK_FILE))}
+user={shlex.quote(user)}
+minimum_minutes_to_lock={MINIMUM_MINUTES_TO_LOCK}
+
+if [[ ! -f "$block_file" ]]; then
+    exit 0
+fi
+
+if ! IFS= read -r block_end < "$block_file"; then
+    exit 0
+fi
+
+if ! block_end_epoch=$(/usr/bin/date --date="$block_end" +%s 2>/dev/null); then
+    exit 0
+fi
+
+current_epoch=$(/usr/bin/date +%s)
+latest_lock_epoch=$((block_end_epoch - minimum_minutes_to_lock * 60))
+
+if (( current_epoch < latest_lock_epoch )); then
+    /usr/bin/chage -E 1970-01-02 "$user"
+fi
+'''.strip(),
+    ], minutes=minutes_to_start-MINIMUM_MINUTES_TO_LOCK)
     
     run_cmd(['touch', str(USER_LOCK_FILE)])
     schedule_run_cmd(['rm', str(USER_LOCK_FILE)],minutes=minutes_to_end)
