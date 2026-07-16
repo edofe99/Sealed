@@ -45,7 +45,9 @@ def lock_access(minutes_to_start: int, minutes_to_end: int) -> None:
     
     if minutes_to_start >= minutes_to_end - MINIMUM_MINUTES_TO_LOCK:
         raise RuntimeError(f"Can't schedule user access lock. The lock must start at least {MINIMUM_MINUTES_TO_LOCK} minutes before the block ends.")
-    
+    if minutes_to_start < 0 or minutes_to_end <= 0:
+        raise RuntimeError("Cannot schedule user access using a negative or expired delay.")
+
     user = get_current_user()
     previous_expiry = _get_current_account_expiry(user)
 
@@ -83,11 +85,10 @@ latest_lock_epoch=$((block_end_epoch - minimum_minutes_to_lock * 60))
 
 if (( current_epoch < latest_lock_epoch )); then
     /usr/bin/chage -E 1970-01-02 "$user"
-    touch {shlex.quote(str(USER_LOCK_FILE))}
 fi
 '''.strip(),
     ], minutes=minutes_to_start)
     
+    run_cmd(['touch', str(USER_LOCK_FILE)])
     schedule_run_cmd(['rm', str(USER_LOCK_FILE)],minutes=minutes_to_end)
-
     schedule_logout(minutes_to_start)
