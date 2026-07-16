@@ -32,7 +32,6 @@ def _block_root_access(minutes: int) -> None:
 
 
 def system_block(block_root = True,
-                 exclude_user_from_root = True,
                  minutes = 60,
                  leechblock_blocker = True,
                  exceptions : Union[ExceptionType, Iterable[ExceptionType], None] = None,
@@ -43,13 +42,19 @@ def system_block(block_root = True,
     # ------------------------------ Initial checks ------------------------------ #
     user = utils.startup_checks()
 
-    if exclude_user_from_root:
-        utils.log('Removing user from sudo group')
-        _block_user_access_to_root(user, minutes, exceptions)
-
     if block_root:
-        utils.log('Blocking root access using a password')
+        utils.log(f'Revoking root commands execution for {utils.get_current_user()}')
+        _block_user_access_to_root(user, minutes, exceptions)
+        
+        utils.log('Blocking root access')
         _block_root_access(minutes)
+        
+        block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
+        BLOCK_FILE.write_text(block_end + "\n")
+
+        utils.send_notification(f"BLOCK ACTIVE UNTIL {block_end}")
+        utils.send_notification("BLOCK ENDED", minutes)
+        utils.log(f'BLOCK ACTIVE UNTIL {block_end}')
 
     # We block the removal of leechblock website blocker, so you can start a website block and not be able to stop it
     if leechblock_blocker:
@@ -74,12 +79,3 @@ def system_block(block_root = True,
             minutes_to_start=lock_access_minutes,
             minutes_to_end=minutes,
         )
-
-    block_end = (datetime.now() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M")
-    BLOCK_FILE.write_text(block_end + "\n")
-
-    # ------------------------------- NOTIFICATIONS ------------------------------ #
-
-    utils.send_notification(f"BLOCK ACTIVE UNTIL {block_end}")
-    utils.send_notification("BLOCK ENDED", minutes)
-    utils.log(f'BLOCK ACTIVE UNTIL {block_end}')

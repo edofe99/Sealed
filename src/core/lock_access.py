@@ -52,7 +52,7 @@ def lock_access(minutes_to_start: int, minutes_to_end: int) -> None:
     log(f'Scheduling user account to be unlocked in {minutes_to_end} minutes')
     schedule_run_cmd(["chage", "-E", previous_expiry, user],minutes=minutes_to_end)
 
-    log(f'Scheduling user account to be locked in {minutes_to_start - MINIMUM_MINUTES_TO_LOCK} minutes')
+    log(f'Scheduling user account to be locked in {minutes_to_start} minutes')
     """
     We need to schedule the lock at least MINIMUM_MINUTES_TO_LOCK before the block ends, so we subtract that from minutes_to_start
     This is to avoid a race condition where the computer might be suspended/turned before scheduled account lock and scheduled restore are meant to be run, 
@@ -83,11 +83,11 @@ latest_lock_epoch=$((block_end_epoch - minimum_minutes_to_lock * 60))
 
 if (( current_epoch < latest_lock_epoch )); then
     /usr/bin/chage -E 1970-01-02 "$user"
+    touch {shlex.quote(str(USER_LOCK_FILE))}
 fi
 '''.strip(),
-    ], minutes=minutes_to_start-MINIMUM_MINUTES_TO_LOCK)
+    ], minutes=minutes_to_start)
     
-    run_cmd(['touch', str(USER_LOCK_FILE)])
     schedule_run_cmd(['rm', str(USER_LOCK_FILE)],minutes=minutes_to_end)
 
     schedule_logout(minutes_to_start)

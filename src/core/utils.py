@@ -89,7 +89,7 @@ def run_cmd(command: SubprocessCommand, stdin_text: Optional[str] = None, skip_c
     return proc
 
 
-def schedule_run_cmd(command_to_schedule: SubprocessCommand, minutes: int) -> subprocess.CompletedProcess[str]:
+def schedule_run_cmd(command_to_schedule: SubprocessCommand, minutes: int, print_log = True) -> subprocess.CompletedProcess[str]:
     """
     Schedule a command to run in <minutes> using `at` by sending a small script to at's stdin.
     IMPORTANT: at job must be created as root if the scheduled command needs root.
@@ -105,10 +105,11 @@ def schedule_run_cmd(command_to_schedule: SubprocessCommand, minutes: int) -> su
 
     # Create the at job AS ROOT so it will run as root
     schedule_cmd: SubprocessCommand = ["at", "now", "+", str(minutes), "minutes"]
+    
+    if print_log:
+        log("The following command has been scheduled for:", (datetime.now() + timedelta(minutes=minutes)).isoformat(timespec="seconds"))
 
-    log("The following command has been scheduled for:",(datetime.now() + timedelta(minutes=minutes)).isoformat(timespec="seconds"))
-
-    return run_cmd(schedule_cmd, stdin_text=job_script)
+    return run_cmd(schedule_cmd, stdin_text=job_script, print_log=print_log)
 
 
 
@@ -303,9 +304,9 @@ def send_notification(message : str = None, minutes : int = None):
     ]
 
     if minutes is not None and minutes > 0:
-        schedule_run_cmd(notify_params, minutes=minutes)
+        schedule_run_cmd(notify_params, minutes=minutes, print_log = False)
     else:
-        run_cmd(notify_params, skip_check=True)
+        run_cmd(notify_params, skip_check=True, print_log = False)
 
 def get_remaining_minutes() -> Optional[int]:
     """
