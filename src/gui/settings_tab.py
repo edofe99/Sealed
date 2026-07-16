@@ -53,7 +53,8 @@ class SettingsTab(QWidget):
 
         self.uninstall_button = RedOutlineButton("Uninstall")
         self.uninstall_button.setStyleSheet(
-            "font-size: 14px; padding: 4px 10px; color: #b00020;"
+            "QPushButton { font-size: 14px; padding: 4px 10px; color: #b00020; }"
+            "QPushButton:disabled { color: #9e9e9e; }"
         )
         self.uninstall_button.clicked.connect(self._confirm_uninstall)
         layout.addWidget(self.uninstall_button)
@@ -77,6 +78,7 @@ class SettingsTab(QWidget):
 
     def _confirm_uninstall(self) -> None:
         if is_block_active():
+            QMessageBox.information(self, "Sealed", "You can't uninstall Sealed while a block is active.")
             self._update_control_states()
             return
 
