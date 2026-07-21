@@ -1,8 +1,9 @@
+import os
 import pwd
 import shlex
 
-from src.core.defaults import BLOCK_FILE, MINIMUM_MINUTES_TO_LOCK, USER_LOCK_FILE
-from src.core.utils import get_current_user, log, schedule_run_cmd, send_notification, run_cmd
+from src.core.defaults import BLOCK_FILE, ICON_PATH, MINIMUM_MINUTES_TO_LOCK, USER_LOCK_FILE
+from src.core.utils import get_current_user, log, schedule_run_cmd, run_cmd
 
 def _get_current_account_expiry(user: str) -> str:
     '''
@@ -33,10 +34,41 @@ def schedule_logout(minutes: int) -> None:
     log(f"Scheduled logout in {minutes} minutes for user {user}")
 
     if minutes > 5:
-        send_notification("You will be logged out in 5 minutes.", minutes=minutes-5)
+        _send_lock_notification("You will be logged out in 5 minutes.", minutes=minutes-5)
     if minutes > 1:
-        send_notification("You will be logged out in 1 minute.", minutes=minutes-1)
+        _send_lock_notification("You will be logged out in 1 minute.", minutes=minutes-1)
 
+def _send_lock_notification(message: str, minutes: int) -> None:
+    '''
+    We use this instead of the normal notification function because we want to send these notifications only if the account_lock file exists.
+    i.e. we want to avoid a scenario where the user activate the lock, turns off the pc, the lock ends, the user turn on the pc and he gets a notification
+    like "You will be logged out in 5 minutes", because that would not be true.
+    '''
+    user = get_current_user()
+    uid = int(os.environ.get("SUDO_UID") or pwd.getpwnam(user).pw_uid)
+
+    notify_params = [
+        "bash", "-c",
+        '[[ -e "$1" ]] || exit 0; exec "${@:2}"',
+        "_",
+        str(USER_LOCK_FILE),
+        "runuser", "-u", user, "--",
+        "env",
+        f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
+        f"XDG_RUNTIME_DIR=/run/user/{uid}",
+        f"DISPLAY={os.environ.get('DISPLAY', ':0')}",
+        "notify-send",
+        "--urgency=normal",
+        "--app-name=Sealed",
+        f"--icon={ICON_PATH}",
+        "--expire-time=10000",
+        "--transient",
+        "Sealed",
+        message,
+    ]
+
+    if minutes is not None and minutes > 0:
+        schedule_run_cmd(notify_params, minutes=minutes, print_log = False)
 
 def lock_access(minutes_to_start: int, minutes_to_end: int) -> None:
     
