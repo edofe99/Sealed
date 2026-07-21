@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.3 - 
+
+### Added
+- Better UI on the main block page, now you can pick an actual date.
+
 ## 4.2 - 2026-07-21
 
 ### Added

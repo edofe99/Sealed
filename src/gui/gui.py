@@ -3,13 +3,10 @@ from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import sys
-from PySide6.QtCore import QCoreApplication, QDateTime, QRectF, Qt, QTimer
-from PySide6.QtGui import QGuiApplication, QIcon, QPainter
+from PySide6.QtCore import QCoreApplication, QDateTime, Qt, QTimer
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import (
     QApplication,
-    QCalendarWidget,
-    QCheckBox,
-    QDateTimeEdit,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -32,6 +29,7 @@ from src.gui.file_folders_tab import FileFoldersTab
 from src.gui.lock_acces_tab import LockAccessTab
 from src.gui.settings_tab import SettingsTab
 from src.gui.theme import apply_theme
+from src.gui.widgets import NoWheelDateTimeEdit, ToggleSwitch, configure_date_time_input
 
 QCoreApplication.setApplicationName("Sealed")
 QCoreApplication.setOrganizationName("Sealed")
@@ -47,48 +45,9 @@ DEFAULT_SETTINGS = {
     "block_time_mode": "minutes",
     "lock_access": False,
     "lock_access_in_minutes": 60,
+    "lock_access_mode": "standard",
+    "logout_when_lock_access_starts": True,
 }
-
-
-class ToggleSwitch(QCheckBox):
-    """Compact two-state switch that follows the active Qt palette."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.setFixedSize(52, 28)
-        self.setCursor(Qt.PointingHandCursor)
-        self.setFocusPolicy(Qt.NoFocus)
-
-    def hitButton(self, position) -> bool:
-        return self.rect().contains(position)
-
-    def paintEvent(self, event) -> None:
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-
-        track_color = self.palette().mid().color()
-        knob_color = self.palette().base().color()
-        if not self.isEnabled():
-            track_color.setAlpha(100)
-            knob_color.setAlpha(150)
-
-        track = QRectF(1, 4, self.width() - 2, self.height() - 8)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(track_color)
-        painter.drawRoundedRect(track, 10, 10)
-
-        knob_size = 18
-        knob_x = self.width() - knob_size - 5 if self.isChecked() else 5
-        painter.setBrush(knob_color)
-        painter.drawEllipse(QRectF(knob_x, 5, knob_size, knob_size))
-
-
-
-class NoWheelDateTimeEdit(QDateTimeEdit):
-    """Date-time field that cannot be changed accidentally with the wheel."""
-
-    def wheelEvent(self, event) -> None:
-        event.ignore()
 
 
 def app_icon() -> QIcon:
@@ -186,58 +145,9 @@ def main() -> int:
     mode_layout.addWidget(date_mode_label)
 
     date_input = NoWheelDateTimeEdit()
-    date_input.setDisplayFormat("yyyy-MM-dd HH:mm")
-    date_input.setCalendarPopup(True)
+    configure_date_time_input(date_input)
     date_input.setDateTime(QDateTime.currentDateTime().addSecs(60 * 60))
-    date_input.setAlignment(Qt.AlignCenter)
-    date_input.setStyleSheet(
-        "QDateTimeEdit { font-size: 22px; padding: 8px; }"
-    )
     date_input.setFixedSize(280, 52)
-
-    calendar = date_input.calendarWidget()
-    calendar.setMinimumSize(280, 210)
-    calendar.setGridVisible(False)
-    calendar.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
-    calendar.setHorizontalHeaderFormat(QCalendarWidget.ShortDayNames)
-    calendar.setStyleSheet(
-        """
-        QCalendarWidget QWidget#qt_calendar_navigationbar {
-            background-color: palette(button);
-            border-bottom: 1px solid palette(mid);
-            padding: 4px;
-        }
-        QCalendarWidget QToolButton {
-            background: transparent;
-            border: none;
-            border-radius: 5px;
-            color: palette(button-text);
-            font-weight: 600;
-            min-height: 28px;
-            padding: 3px 8px;
-        }
-        QCalendarWidget QToolButton:hover {
-            background: palette(midlight);
-        }
-        QCalendarWidget QSpinBox {
-            background: palette(base);
-            border: 1px solid palette(mid);
-            border-radius: 4px;
-            padding: 3px;
-        }
-        QCalendarWidget QAbstractItemView {
-            background: palette(base);
-            border: none;
-            outline: none;
-            selection-background-color: palette(highlight);
-            selection-color: palette(highlighted-text);
-            padding: 6px;
-        }
-        QCalendarWidget QMenu {
-            background: palette(base);
-        }
-        """
-    )
 
     time_input_stack = QStackedWidget()
     time_input_stack.setFixedSize(280, 52)
@@ -272,7 +182,7 @@ def main() -> int:
     start_button.setStyleSheet("font-size: 20px; padding: 10px 18px;")
     start_button.setFixedWidth(220)
 
-    scheduled_lock_label = QLabel("Scheduled lock user access")
+    scheduled_lock_label = QLabel("Scheduled access block")
     scheduled_lock_label.setAlignment(Qt.AlignCenter)
     scheduled_lock_label.setStyleSheet("color: #c85f72; font-size: 14px;")
 
@@ -325,7 +235,7 @@ def main() -> int:
 
         start_button.setEnabled(not block_active and valid_time)
         scheduled_lock_label.setVisible(
-            lock_access_tab.lock_access_checkbox.isChecked() and not block_active
+            lock_access_tab.has_pending_schedules() and not block_active
         )
 
         if block_active:
@@ -339,16 +249,10 @@ def main() -> int:
             update_ui_state()
             return
 
-        lock_access_minutes = lock_access_tab.selected_minutes()
-        if (
-            lock_access_minutes is not None
-            and lock_access_minutes >= block_minutes
-        ):
-            QMessageBox.warning(
-                window,
-                "Sealed",
-                "The access lock must start before the block ends.",
-            )
+        try:
+            pending_access_ranges = lock_access_tab.pending_ranges(block_minutes)
+        except Exception as error:
+            QMessageBox.warning(window, "Sealed", str(error))
             return
 
         start_button.setEnabled(False)
@@ -357,13 +261,11 @@ def main() -> int:
             system_block(
                 minutes=block_minutes,
                 leechblock_blocker=settings_tab.leechblock_policy_enabled(),
-                lock_access_minutes=lock_access_minutes,
+                lock_access_minutes=None,
             )
+            lock_access_tab.confirm_ranges(pending_access_ranges)
         except Exception as error:
             QMessageBox.critical(window, "Sealed", str(error))
-        else:
-            if lock_access_minutes is not None:
-                lock_access_tab.mark_lock_scheduled()
 
         update_ui_state()
 
@@ -383,7 +285,7 @@ def main() -> int:
     minutes_input.valueChanged.connect(save_block_duration)
     date_input.dateTimeChanged.connect(update_ui_state)
     time_mode_toggle.toggled.connect(save_block_time_mode)
-    lock_access_tab.lock_access_checkbox.toggled.connect(update_ui_state)
+    lock_access_tab.schedule_changed.connect(update_ui_state)
     start_button.clicked.connect(start_block)
     update_ui_state()
 

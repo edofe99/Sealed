@@ -49,6 +49,17 @@ class SettingsTab(QWidget):
             self._save_leechblock_policy
         )
         layout.addWidget(self.leechblock_policy_checkbox)
+
+        self.logout_on_lock_access_checkbox = QCheckBox(
+            "Logout when Lock Access start"
+        )
+        self.logout_on_lock_access_checkbox.setChecked(
+            bool(settings.get("logout_when_lock_access_starts", True))
+        )
+        self.logout_on_lock_access_checkbox.toggled.connect(
+            self._save_logout_on_lock_access
+        )
+        layout.addWidget(self.logout_on_lock_access_checkbox)
         layout.addStretch()
 
         self.uninstall_button = RedOutlineButton("Uninstall")
@@ -69,6 +80,10 @@ class SettingsTab(QWidget):
 
     def _save_leechblock_policy(self, checked: bool) -> None:
         self._settings["leechblock_policy"] = checked
+        self._save_settings(self._settings)
+
+    def _save_logout_on_lock_access(self, checked: bool) -> None:
+        self._settings["logout_when_lock_access_starts"] = checked
         self._save_settings(self._settings)
 
     def _update_control_states(self) -> None:
