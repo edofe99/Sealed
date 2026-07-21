@@ -517,6 +517,7 @@ class LockAccessTab(QWidget):
                 )
 
         scheduled_mode = self.mode_toggle.isChecked()
+        lock_scheduled = bool(get_lock_access_schedules())
         self.mode_toggle.setEnabled(not block_active)
         self.views.setCurrentIndex(1 if scheduled_mode else 0)
         self.standard_mode_label.setStyleSheet(
@@ -525,9 +526,14 @@ class LockAccessTab(QWidget):
         self.scheduled_mode_label.setStyleSheet(
             "font-weight: 600;" if scheduled_mode else "color: grey;"
         )
+        self.lock_access_checkbox.setEnabled(
+            not block_active or not lock_scheduled
+        )
         self.minutes_input.setEnabled(self.lock_access_checkbox.isChecked())
         self.status_label.setVisible(self.lock_access_checkbox.isChecked())
-        self.lock_button.setVisible(block_active)
+        self.lock_button.setVisible(
+            block_active and (scheduled_mode or not lock_scheduled)
+        )
         self.lock_button.setEnabled(block_active and self.has_pending_schedules())
         self._update_standard_label()
         self._update_cutoff_label()
