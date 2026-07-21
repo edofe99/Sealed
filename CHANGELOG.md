@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.2 - 2026-07-21
+
+### Added
+
+- Now you can prevent yourself using your pc during a block with the new "Lock Access" tab. Specify an amount of minutes from now and your account will be locked at that time until the main block ends.
+
 ## 4.1 - 2026-07-12
 
 ### Added
