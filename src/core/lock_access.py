@@ -5,21 +5,6 @@ import shlex
 from src.core.defaults import BLOCK_FILE, ICON_PATH, MINIMUM_MINUTES_TO_LOCK, USER_LOCK_FILE
 from src.core.utils import get_current_user, log, schedule_run_cmd, run_cmd
 
-def _get_current_account_expiry(user: str) -> str:
-    '''
-    We lock user access by setting the account expiry date to a date in the past.
-    This function returns the current account expiry date for the given user.
-    i.e. the value to be restored after the lock period is over.
-    '''
-    proc = run_cmd(["sudo", "getent", "shadow", user])
-    shadow_line = proc.stdout.strip().splitlines()[0]
-    fields = shadow_line.split(":")
-
-    if len(fields) < 8:
-        raise RuntimeError(f"Unable to read account expiry for {user}")
-
-    return fields[7] or "-1"
-
 def schedule_logout(minutes: int) -> None:
     user = get_current_user()
     uid = pwd.getpwnam(user).pw_uid
@@ -81,10 +66,8 @@ def lock_access(minutes_to_start: int, minutes_to_end: int) -> None:
         raise RuntimeError("Cannot schedule user access using a negative or expired delay.")
 
     user = get_current_user()
-    previous_expiry = _get_current_account_expiry(user)
-
     log(f'Scheduling user account to be unlocked in {minutes_to_end} minutes')
-    schedule_run_cmd(["chage", "-E", previous_expiry, user],minutes=minutes_to_end)
+    schedule_run_cmd(["usermod", "-U", user], minutes=minutes_to_end)
 
     log(f'Scheduling user account to be locked in {minutes_to_start} minutes')
     """
@@ -116,7 +99,7 @@ current_epoch=$(/usr/bin/date +%s)
 latest_lock_epoch=$((block_end_epoch - minimum_minutes_to_lock * 60))
 
 if (( current_epoch < latest_lock_epoch )); then
-    /usr/bin/chage -E 1970-01-02 "$user"
+    /usr/bin/usermod -L "$user"
 fi
 '''.strip(),
     ], minutes=minutes_to_start)
