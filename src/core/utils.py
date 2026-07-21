@@ -1,3 +1,4 @@
+import math
 import os
 import pwd
 import shlex
@@ -87,6 +88,17 @@ def run_cmd(command: SubprocessCommand, stdin_text: Optional[str] = None, skip_c
         raise RuntimeError(proc.stderr.strip() or proc.stdout.strip() or f"Command failed: {command}")
 
     return proc
+
+
+def time_string_to_minutes(time_string: str) -> int:
+    """Convert a local ``YYYY-MM-DD HH:MM`` timestamp to minutes from now."""
+    target_time = datetime.strptime(time_string, "%Y-%m-%d %H:%M")
+    seconds_from_now = (target_time - datetime.now()).total_seconds()
+
+    if seconds_from_now <= 0:
+        raise RuntimeError("The scheduled time must be in the future.")
+
+    return math.ceil(seconds_from_now / 60)
 
 
 def schedule_run_cmd(command_to_schedule: SubprocessCommand, minutes: int, print_log = True) -> subprocess.CompletedProcess[str]:
