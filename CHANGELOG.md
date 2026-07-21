@@ -4,6 +4,8 @@
 
 ### Added
 - Better UI on the main block page, now you can pick an actual date.
+- Now you can schedule user lock times
+- Now there is an option to lock the screen: either you get logged out or the screen just locks.
 
 ## 4.2 - 2026-07-21
 
